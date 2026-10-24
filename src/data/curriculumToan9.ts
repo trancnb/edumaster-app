@@ -1,0 +1,3520 @@
+import { CurriculumEntry, WorkspaceState, KHBDData } from '../types/edtech';
+import { generateStaticSlides } from '../utils/slideGenerator';
+import { getSavedTeacherProfile } from '../utils/teacherStorage';
+import { applySeparateBranchPeriodNumbering } from '../utils/curriculumHelpers';
+import { extractClassesForGrade } from '../utils/classHelpers';
+
+// DỮ LIỆU PHÂN PHỐI CHƯƠNG TRÌNH TOÁN 9 - TRƯỜNG THCS MỸ HÓA (NĂM HỌC 2026-2027)
+// NGUỒN: PHÂN PHỐI CHƯƠNG TRÌNH BỘ GD&ĐT - CẢ NĂM 140 TIẾT (HK1: 72 TIẾT, HK2: 68 TIẾT)
+// ĐỒNG BỘ 100% THEO KHỐI, MÔN, TUẦN (TUẦN 1 - TUẦN 35) VÀ ĐỦ SỐ TIẾT (TIẾT 1 - TIẾT 140)
+const RAW_CURRICULUM_TOAN_9: CurriculumEntry[] = [
+  {
+    id: "t9-w1-p1",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 1,
+    periodNumber: 1,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Bài 1. Khái niệm phương trình và hệ hai phương trình bậc nhất hai ẩn\n(Tiết 1: Phương trình bậc nhất 2 ẩn)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.1.NC1b: Dùng Google/YouTube tìm hiểu mô hình thực tế hệ bậc nhất 2 ẩn",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w1-p2",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 1,
+    periodNumber: 2,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Bài 1. Khái niệm phương trình và hệ hai phương trình bậc nhất hai ẩn\n(Tiết 2: Hệ phương trình bậc nhất 2 ẩn)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Dùng GeoGebra trực quan hóa tập nghiệm trên mặt phẳng",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w1-p3",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 1,
+    periodNumber: 3,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Bài 11. Tỉ số lượng giác của góc nhọn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Sử dụng GeoGebra đo cạnh, góc và xác định tỉ số lượng giác",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w1-p4",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 1,
+    periodNumber: 4,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Bài 11. Tỉ số lượng giác của góc nhọn (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Sử dụng Desmos tính sin, cos, tan của góc nhọn",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w2-p5",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 2,
+    periodNumber: 5,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Bài 2. Giải hệ hai phương trình bậc nhất hai ẩn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Dùng GeoGebra xác định nghiệm hệ bằng giao điểm 2 đường thẳng",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w2-p6",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 2,
+    periodNumber: 6,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Bài 2. Giải hệ hai phương trình bậc nhất hai ẩn (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.1.NC1b: Dùng công cụ số đối chiếu phương pháp thế và cộng đại số",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w2-p7",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 2,
+    periodNumber: 7,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Bài 11. Tỉ số lượng giác của góc nhọn (Tiết 3)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC2: Tìm kiếm ứng dụng thực tế tỉ số lượng giác qua Internet",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w2-p8",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 2,
+    periodNumber: 8,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Luyện tập: Tỉ số lượng giác của góc nhọn và bảng lượng giác",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Thực hành tra cứu góc và tỉ số lượng giác bằng máy tính cầm tay",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w3-p9",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 3,
+    periodNumber: 9,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Bài 2. Giải hệ hai phương trình bậc nhất hai ẩn (Tiết 3)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Vận dụng máy tính cầm tay kiểm tra nghiệm của hệ phương trình",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w3-p10",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 3,
+    periodNumber: 10,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Luyện tập: Giải hệ hai phương trình bậc nhất hai ẩn",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Sử dụng bảng tính kiểm tra hệ có vô số nghiệm hoặc vô nghiệm",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w3-p11",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 3,
+    periodNumber: 11,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Bài 12. Một số hệ thức về cạnh và góc trong tam giác vuông (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Mô phỏng tam giác vuông và các hệ thức bằng GeoGebra",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w3-p12",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 3,
+    periodNumber: 12,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Bài 12. Một số hệ thức về cạnh và góc trong tam giác vuông (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Vẽ hình và tính toán độ dài cạnh tam giác vuông bằng phần mềm",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w4-p13",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 4,
+    periodNumber: 13,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Bài 3. Giải bài toán bằng cách lập hệ phương trình (Tiết 1: Dạng toán chuyển động)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.1.NC1b: Tìm kiếm dữ liệu thực tế về vận tốc, quãng đường để lập bài toán",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w4-p14",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 4,
+    periodNumber: 14,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Bài 3. Giải bài toán bằng cách lập hệ phương trình (Tiết 2: Dạng toán năng suất và phần trăm)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Lập bảng số liệu mối liên hệ giữa các đại lượng bằng Excel",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w4-p15",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 4,
+    periodNumber: 15,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Bài 12. Một số hệ thức về cạnh và góc trong tam giác vuông (Tiết 3)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Đo đạc và giải tam giác vuông với sự hỗ trợ của MTCT Casio",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w4-p16",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 4,
+    periodNumber: 16,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Luyện tập: Hệ thức về cạnh và góc trong tam giác vuông",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Thực hành vẽ mô hình bài toán thực tế bằng phần mềm hình học",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w5-p17",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 5,
+    periodNumber: 17,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Bài 3. Giải bài toán bằng cách lập hệ phương trình (Tiết 3: Dạng hình học và thực tiễn)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.1.NC1b: Khai thác tình huống thực tế để mô hình hóa toán học",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w5-p18",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 5,
+    periodNumber: 18,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Luyện tập chung: Giải bài toán bằng cách lập hệ phương trình",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Sử dụng phần mềm kiểm tra tính hợp lý của kết quả nghiệm",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w5-p19",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 5,
+    periodNumber: 19,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Ứng dụng thực tế của tỉ số lượng giác (Thực hành đo chiều cao cây, tháp ngoài trời) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1.NC1a: Sử dụng giác kế và điện thoại thông minh chụp ảnh góc ngắm đo chiều cao",
+    aiRoleCode: "9.D1.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w5-p20",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 5,
+    periodNumber: 20,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Ứng dụng thực tế của tỉ số lượng giác (Thực hành đo khoảng cách hai điểm không tới được) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1.NC1a: Xử lý số liệu đo đạc thực tế trên phần mềm bảng tính",
+    aiRoleCode: "9.D1.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w6-p21",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 6,
+    periodNumber: 21,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Ôn tập Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Hệ thống hóa sơ đồ tư duy Chương I bằng phần mềm mindmap",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w6-p22",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 6,
+    periodNumber: 22,
+    branch: "Đại số",
+    chapter: "Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn",
+    lessonName: "Ôn tập Chương I. Phương trình và hệ hai phương trình bậc nhất hai ẩn (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Làm bài tập củng cố tương tác trên nền tảng trắc nghiệm số",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w6-p23",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 6,
+    periodNumber: 23,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Ôn tập Chương IV. Hệ thức lượng trong tam giác vuông (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Vẽ sơ đồ tóm tắt công thức lượng giác trên Canva/PowerPoint",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w6-p24",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 6,
+    periodNumber: 24,
+    branch: "Hình học",
+    chapter: "Chương IV. Hệ thức lượng trong tam giác vuông",
+    lessonName: "Ôn tập Chương IV. Hệ thức lượng trong tam giác vuông (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Dựng hình minh họa các bài toán tổng hợp bằng GeoGebra",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w7-p25",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 7,
+    periodNumber: 25,
+    branch: "Đại số",
+    chapter: "Chương II. Bất đẳng thức và bất phương trình bậc nhất một ẩn",
+    lessonName: "Bài 4. Bất đẳng thức (Khái niệm và tính chất liên hệ giữa thứ tự và phép cộng) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.1.NC1b: Tìm kiếm các tình huống so sánh giới hạn tải trọng, vận tốc trong đời sống",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w7-p26",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 7,
+    periodNumber: 26,
+    branch: "Đại số",
+    chapter: "Chương II. Bất đẳng thức và bất phương trình bậc nhất một ẩn",
+    lessonName: "Bài 4. Bất đẳng thức (Tính chất liên hệ giữa thứ tự và phép nhân) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Biểu diễn tập nghiệm bất đẳng thức trên trục số bằng GeoGebra",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w7-p27",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 7,
+    periodNumber: 27,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 13. Khái niệm đường tròn và tính chất đối xứng của đường tròn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Dựng đường tròn, xác định tâm đối xứng và trục đối xứng trên phần mềm",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w7-p28",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 7,
+    periodNumber: 28,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 13. Khái niệm đường tròn và tính chất đối xứng của đường tròn (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Khám phá mối quan hệ đường kính và dây của đường tròn bằng GeoGebra",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w8-p29",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 8,
+    periodNumber: 29,
+    branch: "Đại số",
+    chapter: "Chương II. Bất đẳng thức và bất phương trình bậc nhất một ẩn",
+    lessonName: "Bài 5. Bất phương trình bậc nhất một ẩn (Khái niệm và nghiệm) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Minh họa hình học biểu diễn tập nghiệm bất phương trình",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w8-p30",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 8,
+    periodNumber: 30,
+    branch: "Đại số",
+    chapter: "Chương II. Bất đẳng thức và bất phương trình bậc nhất một ẩn",
+    lessonName: "Bài 5. Bất phương trình bậc nhất một ẩn (Quy tắc chuyển vế và nhân) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Luyện tập giải bất phương trình bậc nhất trên phần mềm trắc nghiệm",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w8-p31",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 8,
+    periodNumber: 31,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 14. Vị trí tương đối của đường thẳng và đường tròn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Kéo thả đường thẳng và quan sát khoảng cách d với bán kính R trên GeoGebra",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w8-p32",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 8,
+    periodNumber: 32,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 14. Vị trí tương đối của đường thẳng và đường tròn (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Nhận biết tiếp tuyến và tiếp điểm của đường tròn qua hình động",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w9-p33",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 9,
+    periodNumber: 33,
+    branch: "Đại số",
+    chapter: "Chương II. Bất đẳng thức và bất phương trình bậc nhất một ẩn",
+    lessonName: "Bài 5. Bất đẳng thức và tính chất\n(Tiết 1: Bất đẳng thức)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Sử dụng công cụ số (GeoGebra, Desmos) để biểu diễn, kiểm chứng bất đẳng thức",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w9-p34",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 9,
+    periodNumber: 34,
+    branch: "Đại số",
+    chapter: "Kiểm tra đánh giá giữa Học kì 1",
+    lessonName: "Kiểm tra đánh giá giữa Học kì 1 môn Toán (Thời gian: 90 phút - Khảo sát toàn diện)\n(tiết 1/2 kiểm tra)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Làm bài kiểm tra kết hợp trắc nghiệm số và tự luận theo ma trận đề chuẩn",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w9-p35",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 9,
+    periodNumber: 35,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Luyện tập chung: Hệ thức lượng trong tam giác vuông và đường tròn\n(Tiết 1: Đường tròn và vị trí tương đối)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC3: Trình bày kiến thức bằng sơ đồ tư duy trên MindMeister",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w9-p36",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 9,
+    periodNumber: 36,
+    branch: "Hình học",
+    chapter: "Kiểm tra đánh giá giữa Học kì 1",
+    lessonName: "Kiểm tra đánh giá giữa Học kì 1 môn Toán (Thời gian: 90 phút - Khảo sát toàn diện)\n(tiết 2/2 kiểm tra)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Thực hiện phần thi hình học tổng hợp trong đề thi 90 phút chuẩn CV 7991",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w10-p37",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 10,
+    periodNumber: 37,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Bài 6. Căn bậc hai và căn thức bậc hai (Khái niệm căn bậc hai số học) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Dùng máy tính cầm tay tính giá trị đúng và giá trị gần đúng căn bậc hai",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w10-p38",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 10,
+    periodNumber: 38,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Bài 6. Căn bậc hai và căn thức bậc hai (Điều kiện xác định của căn thức bậc hai) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Tìm điều kiện xác định của biểu thức chứa căn qua công cụ số",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w10-p39",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 10,
+    periodNumber: 39,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 15. Dấu hiệu nhận biết tiếp tuyến của đường tròn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Dựng tiếp tuyến đi qua một điểm trên đường tròn bằng GeoGebra",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w10-p40",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 10,
+    periodNumber: 40,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 15. Dấu hiệu nhận biết tiếp tuyến của đường tròn (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Thực hành vẽ tiếp tuyến đi qua một điểm nằm ngoài đường tròn",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w11-p41",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 11,
+    periodNumber: 41,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Bài 7. Tính chất của phép khai phương (Khai phương một tích) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Khám phá định lí khai phương một tích bằng các phép tính trên máy tính",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w11-p42",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 11,
+    periodNumber: 42,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Bài 7. Tính chất của phép khai phương (Khai phương một thương) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Rút gọn biểu thức chứa căn bằng quy tắc khai phương",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w11-p43",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 11,
+    periodNumber: 43,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 16. Tính chất của hai tiếp tuyến cắt nhau (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Đo đạc và kiểm chứng tính chất đối xứng của hai tiếp tuyến cắt nhau",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w11-p44",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 11,
+    periodNumber: 44,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 16. Tính chất của hai tiếp tuyến cắt nhau (Tiết 2: Đường tròn nội tiếp tam giác)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Dựng đường tròn nội tiếp tam giác bằng các đường phân giác trên phần mềm",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w12-p45",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 12,
+    periodNumber: 45,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Bài 8. Biến đổi đơn giản biểu thức chứa căn thức bậc hai (Đưa thừa số vào trong, ra ngoài căn) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Luyện tập biến đổi căn thức và kiểm tra kết quả bằng máy tính Casio",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w12-p46",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 12,
+    periodNumber: 46,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Bài 8. Biến đổi đơn giản biểu thức chứa căn thức bậc hai (Khử mẫu và trục căn thức ở mẫu) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Áp dụng liên hợp trục căn thức ở mẫu số",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w12-p47",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 12,
+    periodNumber: 47,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 17. Vị trí tương đối của hai đường tròn (Cắt nhau, tiếp xúc nhau) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Mô phỏng chuyển động của hai đường tròn và quan sát số điểm chung trên GeoGebra",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w12-p48",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 12,
+    periodNumber: 48,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Bài 17. Vị trí tương đối của hai đường tròn (Ngoài nhau, đựng nhau) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Lập bảng hệ thức giữa đoạn nối tâm d và hai bán kính R, r",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w13-p49",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 13,
+    periodNumber: 49,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Bài 9. Rút gọn biểu thức chứa căn thức bậc hai (Các dạng toán rút gọn cơ bản) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Thực hành các bước rút gọn phân thức chứa căn bậc hai",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w13-p50",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 13,
+    periodNumber: 50,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Bài 9. Rút gọn biểu thức chứa căn thức bậc hai (Tìm x để biểu thức thỏa mãn điều kiện) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Giải bài toán phụ sau rút gọn: so sánh biểu thức với một số",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w13-p51",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 13,
+    periodNumber: 51,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Luyện tập: Vị trí tương đối của hai đường tròn và tiếp tuyến chung",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Vẽ tiếp tuyến chung ngoài và tiếp tuyến chung trong của hai đường tròn",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w13-p52",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 13,
+    periodNumber: 52,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Ôn tập Chương V. Đường tròn (Hệ thống hóa kiến thức) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Sơ đồ hóa các tính chất dây, tiếp tuyến và vị trí tương đối đường tròn",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w14-p53",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 14,
+    periodNumber: 53,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Bài 10. Căn bậc ba (Khái niệm, tính chất và các phép toán) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Sử dụng máy tính cầm tay khai căn bậc ba các số nguyên và phân số",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w14-p54",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 14,
+    periodNumber: 54,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Luyện tập: Biến đổi căn thức bậc ba và giải phương trình chứa căn bậc ba",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Tìm kiếm và giải quyết các bài toán thực tế liên quan đến thể tích hình lập phương",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w14-p55",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 14,
+    periodNumber: 55,
+    branch: "Hình học",
+    chapter: "Chương V. Đường tròn",
+    lessonName: "Ôn tập Chương V. Đường tròn (Luyện giải bài tập tổng hợp) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Chứng minh tiếp tuyến và các đẳng thức hình học liên quan đường tròn",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w14-p56",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 14,
+    periodNumber: 56,
+    branch: "Thực hành trải nghiệm",
+    chapter: "Hoạt động thực hành trải nghiệm môn Toán 9",
+    lessonName: "Hoạt động trải nghiệm: Thiết kế họa tiết trang trí có dạng hình tròn bằng phần mềm đồ họa",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1.TC2a: Dùng Canva/GeoGebra tạo hoa văn từ các cung tròn đối xứng",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w15-p57",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 15,
+    periodNumber: 57,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Ôn tập Chương III. Căn bậc hai và căn bậc ba (Tiết 1: Lý thuyết và rút gọn)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Tổng kết toàn bộ hằng đẳng thức căn bậc hai vào sơ đồ",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w15-p58",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 15,
+    periodNumber: 58,
+    branch: "Đại số",
+    chapter: "Chương III. Căn bậc hai và căn bậc ba",
+    lessonName: "Ôn tập Chương III. Căn bậc hai và căn bậc ba (Tiết 2: Phương trình chứa căn)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Giải phương trình vô tỉ cơ bản bằng phương pháp đặt ẩn phụ và lũy thừa",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w15-p59",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 15,
+    periodNumber: 59,
+    branch: "Hình học",
+    chapter: "Chương IV & V",
+    lessonName: "Ôn tập cuối Học kì 1: Hệ thức lượng trong tam giác vuông (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Rèn luyện giải tam giác vuông và ứng dụng đo đạc thực tế",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w15-p60",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 15,
+    periodNumber: 60,
+    branch: "Hình học",
+    chapter: "Chương IV & V",
+    lessonName: "Ôn tập cuối Học kì 1: Đường tròn và tiếp tuyến (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Luyện đề thi tổng hợp phần hình học cuối học kì 1",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w16-p61",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 16,
+    periodNumber: 61,
+    branch: "Đại số",
+    chapter: "Ôn tập tổng hợp Học kì 1",
+    lessonName: "Ôn tập học kì 1: Đại số (Hệ phương trình, bất phương trình, căn bậc hai) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.1.NC1b: Luyện đề tổng hợp cuối kì 1 theo định dạng đề chuẩn cấu trúc Bộ GD&ĐT",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w16-p62",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 16,
+    periodNumber: 62,
+    branch: "Đại số",
+    chapter: "Ôn tập tổng hợp Học kì 1",
+    lessonName: "Ôn tập học kì 1: Đại số (Giải bài toán bằng cách lập hệ phương trình) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Rèn phương pháp lập bảng số liệu và trình bày bài giải toán chuẩn xác",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w16-p63",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 16,
+    periodNumber: 63,
+    branch: "Hình học",
+    chapter: "Ôn tập tổng hợp Học kì 1",
+    lessonName: "Ôn tập học kì 1: Kỹ năng chứng minh tiếp tuyến và tính toán độ dài hình học (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Phương pháp chứng minh vuông góc, thẳng hàng và tiếp tuyến đường tròn",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w16-p64",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 16,
+    periodNumber: 64,
+    branch: "Hình học",
+    chapter: "Ôn tập tổng hợp Học kì 1",
+    lessonName: "Ôn tập học kì 1: Giải đề kiểm tra hình học học kì 1 minh họa (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Tự chấm điểm và chữa bài qua đáp án tương tác trực tuyến",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w17-p65",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 17,
+    periodNumber: 65,
+    branch: "Đại số",
+    chapter: "Kiểm tra đánh giá cuối Học kì 1",
+    lessonName: "Hướng dẫn ôn thi và rèn kỹ năng phân bố thời gian làm bài thi học kì 1",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Nhắc nhở lưu ý các lỗi sai thường gặp khi giải toán",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w17-p66",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 17,
+    periodNumber: 66,
+    branch: "Đại số",
+    chapter: "Kiểm tra đánh giá cuối Học kì 1",
+    lessonName: "Kiểm tra đánh giá cuối Học kì 1 môn Toán (Thời gian: 90 phút - Khảo sát toàn diện)\n(tiết 1/2 kiểm tra)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Thực hiện bài kiểm tra định kỳ học kì 1 chuẩn thang điểm và ma trận đề",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w17-p67",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 17,
+    periodNumber: 67,
+    branch: "Hình học",
+    chapter: "Kiểm tra đánh giá cuối Học kì 1",
+    lessonName: "Hướng dẫn giải chi tiết đề cương ôn thi học kì 1 phần hình học",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Củng cố kỹ năng vẽ hình chuẩn mực cho bài thi học kì 1",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w17-p68",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 17,
+    periodNumber: 68,
+    branch: "Hình học",
+    chapter: "Kiểm tra đánh giá cuối Học kì 1",
+    lessonName: "Kiểm tra đánh giá cuối Học kì 1 môn Toán (Thời gian: 90 phút - Khảo sát toàn diện)\n(tiết 2/2 kiểm tra)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Thực hiện phần tự luận và hình học tổng hợp đề thi cuối học kì 1",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w18-p69",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 18,
+    periodNumber: 69,
+    branch: "Đại số",
+    chapter: "Sơ kết Học kì 1",
+    lessonName: "Trả bài kiểm tra cuối Học kì 1: Chữa chi tiết phần Đại số, nhận xét và thống kê",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Thống kê phổ điểm kiểm tra đại số và phân tích các dạng bài hay sai",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w18-p70",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 18,
+    periodNumber: 70,
+    branch: "Hình học",
+    chapter: "Sơ kết Học kì 1",
+    lessonName: "Trả bài kiểm tra cuối Học kì 1: Chữa chi tiết phần Hình học và rút kinh nghiệm",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Sửa chữa lỗi vẽ hình và lập luận chứng minh trong bài thi",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w18-p71",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 18,
+    periodNumber: 71,
+    branch: "Thực hành trải nghiệm",
+    chapter: "Hoạt động thực hành trải nghiệm môn Toán 9",
+    lessonName: "Hoạt động trải nghiệm: Ứng dụng toán học trong phân tích số liệu tài chính cá nhân",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.3.TC2b: Sử dụng Excel lập kế hoạch chi tiêu cá nhân bằng các phép tính toán",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w18-p72",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 1,
+    week: 18,
+    periodNumber: 72,
+    branch: "Đại số",
+    chapter: "Sơ kết Học kì 1",
+    lessonName: "Sơ kết, đánh giá kết quả học tập môn Toán Học kì 1 và phương hướng Học kì 2",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Đặt mục tiêu học tập môn Toán học kì 2 và định hướng ôn thi lớp 10",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w19-p73",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 19,
+    periodNumber: 73,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 18. Hàm số y = ax² (a ≠ 0) và đồ thị (Khái niệm và tính chất biến thiên) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Dùng GeoGebra vẽ đồ thị hàm số y = ax² với hệ số a thay đổi",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w19-p74",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 19,
+    periodNumber: 74,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 18. Hàm số y = ax² (a ≠ 0) và đồ thị (Cách vẽ Parabol trên mặt phẳng tọa độ) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Vẽ Parabol trên phần mềm và tìm tọa độ các điểm thuộc đồ thị",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w19-p75",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 19,
+    periodNumber: 75,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 26. Góc ở tâm. Cung tròn (Khái niệm góc ở tâm và số đo cung) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Sử dụng GeoGebra đo số đo góc ở tâm và so sánh với cung bị chắn",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w19-p76",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 19,
+    periodNumber: 76,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 26. Góc ở tâm. Cung tròn (So sánh hai cung và liên hệ giữa cung và dây) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Khám phá định lý căng dây và so sánh hai cung trên mô hình động",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w20-p77",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 20,
+    periodNumber: 77,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Luyện tập: Vẽ đồ thị Parabol và tìm tọa độ giao điểm với đường thẳng",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Giải phương trình hoành độ giao điểm bằng đại số và đồ thị số",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w20-p78",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 20,
+    periodNumber: 78,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 19. Phương trình bậc hai một ẩn (Khái niệm & Giải phương trình khuyết) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Sử dụng máy tính giải nhanh phương trình bậc hai một ẩn",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w20-p79",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 20,
+    periodNumber: 79,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 27. Góc nội tiếp (Định nghĩa và định lí góc nội tiếp) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Sử dụng GeoGebra dựng góc nội tiếp và khám phá mối liên hệ với góc ở tâm",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w20-p80",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 20,
+    periodNumber: 80,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 27. Góc nội tiếp (Các hệ quả của góc nội tiếp và góc chắn nửa đường tròn) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Chứng minh các góc nội tiếp bằng nhau cùng chắn một cung",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w21-p81",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 21,
+    periodNumber: 81,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 19. Phương trình bậc hai một ẩn (Công thức nghiệm tổng quát với biệt thức Delta) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Dùng công cụ giải phương trình kiểm tra nghiệm và phân tích biệt thức Delta",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w21-p82",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 21,
+    periodNumber: 82,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 19. Phương trình bậc hai một ẩn (Công thức nghiệm thu gọn với Delta phẩy) (Tiết 3)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: So sánh tốc độ tính toán khi áp dụng công thức nghiệm thu gọn trên máy tính",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w21-p83",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 21,
+    periodNumber: 83,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 28. Góc tạo bởi tia tiếp tuyến và dây cung (Khái niệm và định lí) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Quan sát góc tạo bởi tia tiếp tuyến và dây cung bằng góc nội tiếp cùng chắn một cung",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w21-p84",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 21,
+    periodNumber: 84,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 28. Góc tạo bởi tia tiếp tuyến và dây cung (Luyện tập áp dụng) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Ứng dụng chứng minh hai tam giác đồng dạng và tích đoạn thẳng",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w22-p85",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 22,
+    periodNumber: 85,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 20. Định lí Viète và ứng dụng (Khái niệm định lí Viète và tính nhẩm nghiệm) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Vận dụng công cụ số kiểm tra nghiệm và tính tổng/tích hai nghiệm theo Viète",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w22-p86",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 22,
+    periodNumber: 86,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 20. Định lí Viète và ứng dụng (Tìm hai số biết tổng và tích, biểu thức đối xứng) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Rèn luyện tính giá trị các biểu thức đối xứng của nghiệm",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w22-p87",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 22,
+    periodNumber: 87,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 29. Góc có đỉnh ở bên trong đường tròn, góc có đỉnh ở bên ngoài đường tròn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Đo đạc và kiểm chứng công thức số đo góc có đỉnh bên trong/bên ngoài đường tròn",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w22-p88",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 22,
+    periodNumber: 88,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Luyện tập: Các loại góc với đường tròn (Góc ở tâm, góc nội tiếp, góc tạo bởi tiếp tuyến và dây)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Tổng hợp mối quan hệ giữa các loại góc trong đường tròn bằng bảng tương tác",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w23-p89",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 23,
+    periodNumber: 89,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Luyện tập: Định lí Viète và bài toán tìm tham số m để phương trình có 2 nghiệm thỏa mãn điều kiện",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Dùng phần mềm đồ thị trực quan hóa vị trí nghiệm khi m thay đổi",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w23-p90",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 23,
+    periodNumber: 90,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 21. Phương trình quy về phương trình bậc hai (Phương trình trùng phương) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Đặt ẩn phụ giải phương trình trùng phương và kiểm tra điều kiện",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w23-p91",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 23,
+    periodNumber: 91,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 30. Tứ giác nội tiếp (Khái niệm và định lí tổng hai góc đối diện) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Dựng tứ giác có 4 đỉnh trên đường tròn và kiểm tra tổng hai góc đối bằng 180 độ",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w23-p92",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 23,
+    periodNumber: 92,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 30. Tứ giác nội tiếp (Các dấu hiệu nhận biết tứ giác nội tiếp) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Thực hành 4 dấu hiệu nhận biết tứ giác nội tiếp qua các bài tập hình động",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w24-p93",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 24,
+    periodNumber: 93,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 21. Phương trình quy về phương trình bậc hai (Phương trình chứa ẩn ở mẫu và phương trình tích) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Phân tích đa thức thành nhân tử để giải phương trình tích bậc cao",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w24-p94",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 24,
+    periodNumber: 94,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 22. Giải bài toán bằng cách lập phương trình bậc hai (Toán chuyển động và năng suất) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.1.NC1b: Tìm kiếm mô hình bài toán thực tế và mô hình hóa toán học",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w24-p95",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 24,
+    periodNumber: 95,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Luyện tập: Phương pháp chứng minh tứ giác nội tiếp đường tròn",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Rèn kỹ năng trình bày các bước chứng minh tứ giác nội tiếp trong bài thi vào 10",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w24-p96",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 24,
+    periodNumber: 96,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 31. Đường tròn ngoại tiếp và đường tròn nội tiếp của tam giác và đa giác đều (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Dựng tâm đường tròn ngoại tiếp/nội tiếp tam giác đều, hình vuông, lục giác đều",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w25-p97",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 25,
+    periodNumber: 97,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Bài 22. Giải bài toán bằng cách lập phương trình bậc hai (Toán hình học và thực tiễn) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Lập phương trình tính kích thước hình chữ nhật, diện tích đất",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w25-p98",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 25,
+    periodNumber: 98,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Ôn tập Chương VI. Hàm số và phương trình bậc hai một ẩn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Vẽ sơ đồ tóm tắt các phương pháp giải phương trình bậc hai",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w25-p99",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 25,
+    periodNumber: 99,
+    branch: "Thống kê & Xác suất",
+    chapter: "Chương VII. Tần số và tần số tương đối",
+    lessonName: "Bài 23. Bảng tần số và biểu đồ tần số (Khái niệm mẫu số liệu và tần số) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Sử dụng bảng tính Excel để tính toán tần số và vẽ biểu đồ cột",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w25-p100",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 25,
+    periodNumber: 100,
+    branch: "Thống kê & Xác suất",
+    chapter: "Chương VII. Tần số và tần số tương đối",
+    lessonName: "Bài 23. Bảng tần số và biểu đồ tần số (Vẽ biểu đồ đoạn thẳng và biểu đồ cột) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Thực hành vẽ biểu đồ đoạn thẳng biểu diễn số liệu trên phần mềm",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w26-p101",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 26,
+    periodNumber: 101,
+    branch: "Đại số",
+    chapter: "Chương VI. Hàm số y = ax² (a ≠ 0). Phương trình bậc hai một ẩn",
+    lessonName: "Ôn tập Chương VI. Hàm số và phương trình bậc hai một ẩn (Tiết 2: Giải bài toán tổng hợp)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Luyện đề kiểm tra chương VI trên ứng dụng học tập trực tuyến",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w26-p102",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 26,
+    periodNumber: 102,
+    branch: "Thống kê & Xác suất",
+    chapter: "Chương VII. Tần số và tần số tương đối",
+    lessonName: "Bài 24. Bảng tần số tương đối và biểu đồ tần số tương đối (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Tính tần số tương đối theo phần trăm và vẽ biểu đồ hình quạt tròn bằng Excel",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w26-p103",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 26,
+    periodNumber: 103,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 32. Độ dài đường tròn, cung tròn. Diện tích hình tròn, hình quạt tròn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Dùng máy tính cầm tay tính độ dài đường tròn và diện tích hình tròn có bán kính bất kì",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w26-p104",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 26,
+    periodNumber: 104,
+    branch: "Hình học",
+    chapter: "Chương IX. Đường tròn ngoại tiếp và đường tròn nội tiếp",
+    lessonName: "Bài 32. Độ dài đường tròn, cung tròn. Diện tích hình tròn, hình quạt tròn (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Ứng dụng tính diện tích và chu vi các vật thể hình tròn trong cuộc sống",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w27-p105",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 27,
+    periodNumber: 105,
+    branch: "Đại số",
+    chapter: "Ôn tập kiểm tra đánh giá giữa Học kì 2",
+    lessonName: "Ôn tập giữa Học kì 2: Phương trình bậc hai, hệ thức Viète và thống kê tần số",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Ôn tập có trọng tâm các dạng toán đại số giữa học kì 2",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w27-p106",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 27,
+    periodNumber: 106,
+    branch: "Đại số",
+    chapter: "Kiểm tra đánh giá giữa Học kì 2",
+    lessonName: "Kiểm tra đánh giá giữa Học kì 2 môn Toán (Thời gian: 90 phút - Khảo sát toàn diện)\n(tiết 1/2 kiểm tra)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Thực hiện bài kiểm tra giữa học kì 2 theo ma trận đề chuẩn Bộ GD&ĐT",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w27-p107",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 27,
+    periodNumber: 107,
+    branch: "Hình học",
+    chapter: "Ôn tập kiểm tra đánh giá giữa Học kì 2",
+    lessonName: "Ôn tập giữa Học kì 2: Góc với đường tròn, tứ giác nội tiếp và diện tích hình quạt",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Rèn kỹ năng vẽ hình phụ trong bài toán tứ giác nội tiếp",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w27-p108",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 27,
+    periodNumber: 108,
+    branch: "Hình học",
+    chapter: "Kiểm tra đánh giá giữa Học kì 2",
+    lessonName: "Kiểm tra đánh giá giữa Học kì 2 môn Toán (Thời gian: 90 phút - Khảo sát toàn diện)\n(tiết 2/2 kiểm tra)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Thực hiện phần tự luận và hình học bài kiểm tra định kì giữa học kì 2",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w28-p109",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 28,
+    periodNumber: 109,
+    branch: "Thống kê & Xác suất",
+    chapter: "Chương VII. Tần số và tần số tương đối",
+    lessonName: "Luyện tập: Bảng tần số, tần số tương đối và vẽ biểu đồ trên phần mềm bảng tính",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Nhập dữ liệu khảo sát thực tế trường học và tạo báo cáo trực quan bằng Excel",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w28-p110",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 28,
+    periodNumber: 110,
+    branch: "Thống kê & Xác suất",
+    chapter: "Chương VIII. Xác suất của biến cố trong một số mô hình xác suất đơn giản",
+    lessonName: "Bài 25. Phép thử ngẫu nhiên và không gian mẫu (Khái niệm phép thử và kết quả có thể) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Sử dụng mô phỏng gieo xúc xắc và tung đồng xu trên máy tính",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w28-p111",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 28,
+    periodNumber: 111,
+    branch: "Hình học",
+    chapter: "Chương X. Một số hình khối trong thực tiễn",
+    lessonName: "Bài 33. Hình trụ (Khái niệm, các yếu tố hình trụ, diện tích xung quanh và thể tích) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.3.TC2b: Sử dụng GeoGebra 3D quan sát hình trụ khi quay hình chữ nhật quanh một cạnh",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w28-p112",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 28,
+    periodNumber: 112,
+    branch: "Hình học",
+    chapter: "Chương X. Một số hình khối trong thực tiễn",
+    lessonName: "Bài 33. Hình trụ (Luyện tập giải bài toán thực tế tính dung tích bể nước, lon nước) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.3.TC2b: Tính toán thể tích và chi phí vật liệu làm thùng chứa hình trụ",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w29-p113",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 29,
+    periodNumber: 113,
+    branch: "Thống kê & Xác suất",
+    chapter: "Chương VIII. Xác suất",
+    lessonName: "Bài 26. Xác suất của biến cố trong một số mô hình đơn giản (Tiết 1: Mô hình đồng khả năng)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Tính xác suất bằng tỷ số giữa số kết quả thuận lợi và tổng số kết quả",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w29-p114",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 29,
+    periodNumber: 114,
+    branch: "Thống kê & Xác suất",
+    chapter: "Chương VIII. Xác suất",
+    lessonName: "Luyện tập: Tính xác suất của biến cố trong các trò chơi thực tế",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1b: Mô phỏng xác suất thực nghiệm và so sánh với xác suất lý thuyết",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w29-p115",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 29,
+    periodNumber: 115,
+    branch: "Hình học",
+    chapter: "Chương X. Một số hình khối trong thực tiễn",
+    lessonName: "Bài 34. Hình nón (Khái niệm, diện tích xung quanh và thể tích hình nón) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.3.TC2b: Mô phỏng hình nón quay quanh tam giác vuông bằng GeoGebra 3D",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w29-p116",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 29,
+    periodNumber: 116,
+    branch: "Hình học",
+    chapter: "Chương X. Một số hình khối trong thực tiễn",
+    lessonName: "Bài 34. Hình nón (Hình nón cụt và bài toán thực tế tính diện tích nón lá, phễu) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.3.TC2b: Tính toán diện tích lá cọ may nón và thể tích phễu",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w30-p117",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 30,
+    periodNumber: 117,
+    branch: "Thống kê & Xác suất",
+    chapter: "Chương VII & VIII",
+    lessonName: "Ôn tập Thống kê và Xác suất (Hệ thống hóa toàn bộ công thức và dạng bài)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Tổng kết các dạng toán thống kê và xác suất lớp 9",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w30-p118",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 30,
+    periodNumber: 118,
+    branch: "Đại số",
+    chapter: "Chuyên đề ôn thi vào lớp 10 THPT",
+    lessonName: "Chuyên đề: Tương giao giữa đường thẳng (d) và Parabol (P) (Tiết 1: Tọa độ giao điểm)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Quan sát số giao điểm của (d) và (P) trên phần mềm đồ thị",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w30-p119",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 30,
+    periodNumber: 119,
+    branch: "Hình học",
+    chapter: "Chương X. Một số hình khối trong thực tiễn",
+    lessonName: "Bài 35. Hình cầu (Khái niệm mặt cầu, diện tích mặt cầu và thể tích hình cầu) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1.TC2a: Sử dụng Canva/GeoGebra 3D mô phỏng quả địa cầu và bóng nước",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w30-p120",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 30,
+    periodNumber: 120,
+    branch: "Hình học",
+    chapter: "Chương X. Một số hình khối trong thực tiễn",
+    lessonName: "Bài 35. Hình cầu (Ứng dụng thực tế tính dung tích bồn cầu khí gas, bóng tròn) (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1.TC2a: Tính bán kính và thể tích các vật thể hình cầu trong đời sống",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w31-p121",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 31,
+    periodNumber: 121,
+    branch: "Đại số",
+    chapter: "Chuyên đề ôn thi vào lớp 10 THPT",
+    lessonName: "Chuyên đề: Tương giao giữa đường thẳng (d) và Parabol (P) (Tiết 2: Tìm m để (d) cắt (P) tại 2 điểm thỏa mãn điều kiện)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Phối hợp hệ thức Viète giải bài toán tương giao chứa tham số",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w31-p122",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 31,
+    periodNumber: 122,
+    branch: "Đại số",
+    chapter: "Chuyên đề ôn thi vào lớp 10 THPT",
+    lessonName: "Chuyên đề: Hệ thức Viète nâng cao và phương trình chứa tham số (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Tìm m để phương trình bậc hai có hai nghiệm cùng dấu, trái dấu",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w31-p123",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 31,
+    periodNumber: 123,
+    branch: "Hình học",
+    chapter: "Chương X. Một số hình khối trong thực tiễn",
+    lessonName: "Luyện tập tổng hợp: Các hình khối trong thực tiễn (Hình trụ, hình nón, hình cầu) (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.3.TC2b: Giải bài toán kết hợp giữa hình trụ và hình nón, bán cầu",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w31-p124",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 31,
+    periodNumber: 124,
+    branch: "Hình học",
+    chapter: "Chương X. Một số hình khối trong thực tiễn",
+    lessonName: "Luyện tập tổng hợp: Các hình khối trong thực tiễn (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.3.TC2b: Tính chi phí sơn phủ bề mặt và đổ bê tông hình khối kiến trúc",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w32-p125",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 32,
+    periodNumber: 125,
+    branch: "Đại số",
+    chapter: "Chuyên đề ôn thi vào lớp 10 THPT",
+    lessonName: "Chuyên đề: Hệ thức Viète nâng cao (Tiết 2: Biểu thức không đối xứng giữa x1 và x2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Vận dụng kỹ thuật hạ bậc và thế nghiệm từ phương trình ban đầu",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w32-p126",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 32,
+    periodNumber: 126,
+    branch: "Thực hành trải nghiệm",
+    chapter: "Hoạt động thực hành trải nghiệm môn Toán 9",
+    lessonName: "Hoạt động trải nghiệm: Mô phỏng các hình khối trong thực tiễn bằng phần mềm GeoGebra 3D",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1.TC2a: Thiết kế mô hình kiến trúc trường học thu nhỏ bằng phần mềm không gian",
+    aiRoleCode: "9.C3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w32-p127",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 32,
+    periodNumber: 127,
+    branch: "Hình học",
+    chapter: "Chương X. Một số hình khối trong thực tiễn",
+    lessonName: "Ôn tập Chương X. Một số hình khối trong thực tiễn (Hệ thống công thức diện tích, thể tích)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Lập bảng so sánh diện tích xung quanh và thể tích hình trụ, nón, cầu",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w32-p128",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 32,
+    periodNumber: 128,
+    branch: "Hình học",
+    chapter: "Chuyên đề ôn thi vào lớp 10 THPT",
+    lessonName: "Chuyên đề hình học tổng hợp: Chứng minh tiếp tuyến và các điểm cùng thuộc đường tròn (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Phương pháp phát hiện các tứ giác nội tiếp liên tiếp trong một bài toán",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w33-p129",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 33,
+    periodNumber: 129,
+    branch: "Đại số",
+    chapter: "Ôn tập tổng hợp cuối năm",
+    lessonName: "Ôn tập tổng hợp cuối năm: Rút gọn biểu thức và câu hỏi phụ (Tiết 1)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3TC2a: Rèn kỹ năng đạt điểm tối đa bài toán rút gọn trong đề thi",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w33-p130",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 33,
+    periodNumber: 130,
+    branch: "Đại số",
+    chapter: "Ôn tập tổng hợp cuối năm",
+    lessonName: "Ôn tập tổng hợp cuối năm: Giải bài toán bằng cách lập phương trình, hệ phương trình (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Hệ thống các dạng toán chuyển động, năng suất, phần trăm, hình học",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w33-p131",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 33,
+    periodNumber: 131,
+    branch: "Hình học",
+    chapter: "Chuyên đề ôn thi vào lớp 10 THPT",
+    lessonName: "Chuyên đề hình học tổng hợp: Chứng minh hệ thức tích và đồng dạng (Tiết 2)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Khai thác tính chất tiếp tuyến và các tam giác đồng dạng suy ra từ tứ giác nội tiếp",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w33-p132",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 33,
+    periodNumber: 132,
+    branch: "Hình học",
+    chapter: "Ôn tập tổng hợp cuối năm",
+    lessonName: "Ôn tập tổng hợp cuối năm: Hình học phẳng và hình không gian thực tiễn",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Rèn luyện giải đề hình học tổng hợp theo cấu trúc đề thi tuyển sinh",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w34-p133",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 34,
+    periodNumber: 133,
+    branch: "Đại số",
+    chapter: "Ôn tập tổng hợp cuối năm",
+    lessonName: "Luyện đề tổng hợp cuối năm: Đề số 1 (Phần Đại số & Thống kê - Thời gian 45 phút)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Tự đánh giá tốc độ làm bài và độ chính xác tính toán",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w34-p134",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 34,
+    periodNumber: 134,
+    branch: "Hình học",
+    chapter: "Ôn tập tổng hợp cuối năm",
+    lessonName: "Luyện đề tổng hợp cuối năm: Đề số 1 (Phần Hình học & Thực hành - Thời gian 45 phút)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Rèn thói quen kiểm tra giả thiết và vẽ hình chuẩn kích thước",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w34-p135",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 34,
+    periodNumber: 135,
+    branch: "Đại số",
+    chapter: "Ôn tập tổng hợp cuối năm",
+    lessonName: "Hướng dẫn phương pháp làm bài thi môn Toán vào lớp 10 và chiến thuật phân bổ thời gian",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Cẩm nang bí quyết tránh mất điểm trình bày toán tự luận",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w34-p136",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 34,
+    periodNumber: 136,
+    branch: "Hình học",
+    chapter: "Ôn tập tổng hợp cuối năm",
+    lessonName: "Rèn kỹ năng giải bài toán cực trị hình học và điểm bất động",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "5.3.NC1a: Tìm giá trị lớn nhất, nhỏ nhất của diện tích và chu vi hình học",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w35-p137",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 35,
+    periodNumber: 137,
+    branch: "Đại số",
+    chapter: "Kiểm tra đánh giá cuối năm môn Toán 9",
+    lessonName: "Kiểm tra đánh giá cuối năm môn Toán 9 (Đề thi chuẩn 90 phút - Khảo sát toàn diện)\n(tiết 1/2 kiểm tra)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Khảo sát chất lượng giáo dục toàn diện cuối năm học",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w35-p138",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 35,
+    periodNumber: 138,
+    branch: "Hình học",
+    chapter: "Kiểm tra đánh giá cuối năm môn Toán 9",
+    lessonName: "Kiểm tra đánh giá cuối năm môn Toán 9 (Đề thi chuẩn 90 phút - Khảo sát toàn diện)\n(tiết 2/2 kiểm tra)",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "4.1TC3b: Đánh giá chuẩn đầu ra môn Toán THCS theo Thông tư 22/2021/TT-BGDĐT",
+    aiRoleCode: "9.C5.1",
+    periodsCount: 2,
+  },
+  {
+    id: "t9-w35-p139",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 35,
+    periodNumber: 139,
+    branch: "Đại số",
+    chapter: "Tổng kết năm học",
+    lessonName: "Trả bài kiểm tra cuối năm: Chữa chi tiết toàn bộ đề thi, biểu dương học sinh tiến bộ",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "3.1TC2a: Công bố kết quả tổng kết môn Toán cả năm học",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+  {
+    id: "t9-w35-p140",
+    grade: "Lớp 9",
+    subject: "Toán học",
+    semester: 2,
+    week: 35,
+    periodNumber: 140,
+    branch: "Đại số",
+    chapter: "Tổng kết năm học",
+    lessonName: "Tổng kết chương trình môn Toán lớp 9 (Cả năm 140 tiết) - Lời dặn dò và định hướng ôn thi vào 10",
+    equipment: "Máy tính, ti vi kết nối mạng, MTCT, SGK Toán 9",
+    location: "Lớp học",
+    digitalCompetency: "1.2.NC1a: Hoàn thành 100% chương trình môn Toán 9 và sẵn sàng kỳ thi vào 10",
+    aiRoleCode: "9.A3.1",
+    periodsCount: 1,
+  },
+];
+
+export const CURRICULUM_TOAN_9: CurriculumEntry[] = applySeparateBranchPeriodNumbering(RAW_CURRICULUM_TOAN_9);
+
+// GENERATOR: Tự động nạp hoàn chỉnh KHBD 5512, Slide trình chiếu và Đề thi 7991 từ mục Phân phối chương trình được chọn
+export function buildStateFromCurriculumEntry(entry: CurriculumEntry, className?: string): WorkspaceState {
+  const isGeometry = entry.branch === 'Hình học';
+  const isStats = entry.branch === 'Thống kê & Xác suất';
+  const saved = getSavedTeacherProfile();
+  const assigned = saved.assignedClasses || saved.className;
+  const gradeKey = entry.grade || 'Lớp 9';
+  const shortGrade = (gradeKey.match(/\d+/) || ['9'])[0];
+
+  // Tự động hóa lấy đúng lớp theo khối (Lớp 9 tự lấy các lớp 9, Lớp 8 tự lấy các lớp 8; dạy nhiều lớp ghi hết các lớp dạy)
+  const effectiveClass = extractClassesForGrade(className, gradeKey, assigned);
+
+  const effectiveTeacher = saved.teacherName || '';
+  const effectiveYear = saved.schoolYear || '2026-2027';
+
+  // Trích xuất thứ tự tiết trong bài dạy (ví dụ: Bài 1 dạy 2 tiết -> Tiết 1, Tiết 2; Bài 2 dạy 2 tiết -> Tiết 1, Tiết 2)
+  const inLessonMatch = entry.lessonName.match(/\((?:tiết|Tiết)\s*(\d+)/i);
+  const lessonPeriodNumber = inLessonMatch ? parseInt(inLessonMatch[1], 10) : 1;
+
+  const isBai2Tiet2 = entry.lessonName.includes('Bài 2') && (entry.lessonName.includes('Tiết 2') || entry.periodNumber === 6);
+  const isBai2Tiet1 = entry.lessonName.includes('Bài 2') && (entry.lessonName.includes('Tiết 1') || entry.periodNumber === 5);
+  const isBai1Tiet2 = (entry.lessonName.includes('Bài 1') || entry.chapter.includes('Khái niệm')) && 
+    (entry.lessonName.includes('Tiết 2') || entry.lessonName.toLowerCase().includes('hệ phương trình') || entry.periodNumber === 2);
+  const isBai1Tiet1 = (entry.lessonName.includes('Bài 1') || entry.chapter.includes('Khái niệm')) && !isBai1Tiet2;
+  const isBai1 = isBai1Tiet1 || isBai1Tiet2;
+
+  let objectives = {
+    knowledge: [
+      `Hiểu rõ nội dung cốt lõi của bài học: ${entry.lessonName}.`,
+      `Vận dụng thành thạo kiến thức thuộc ${entry.chapter} vào giải bài tập và giải quyết tình huống thực tiễn.`,
+      entry.aiRoleCode ? `Tích hợp năng lực số và AI theo chuẩn QĐ 2422: ${entry.aiRoleCode}` : 'Rèn luyện tư duy logic toán học và kỹ năng trình bày khoa học.'
+    ],
+    coreCompetencies: [
+      'Tự chủ và tự học: Tự nghiên cứu tài liệu hướng dẫn học tập và hoàn thành nhiệm vụ cá nhân.',
+      'Giao tiếp và hợp tác: Tích cực thảo luận nhóm, đối chiếu kết quả thực hành qua phần mềm chuyên dụng.',
+      'Giải quyết vấn đề và sáng tạo: Mô hình hóa các tình huống đời sống bằng công cụ toán học.'
+    ],
+    subjectCompetencies: [
+      'Năng lực tư duy và lập luận toán học: Phân tích, suy luận logic toán học chặt chẽ.',
+      'Năng lực mô hình hóa toán học thông qua bài toán thực tế đời sống.',
+      entry.digitalCompetency ? `Năng lực số: ${entry.digitalCompetency}` : 'Năng lực sử dụng công cụ, phương tiện học toán (MTCT Casio fx-580VN X, GeoGebra).'
+    ],
+    qualities: [
+      'Chăm chỉ: Có tinh thần vượt khó, tích cực tham gia các hoạt động xây dựng bài.',
+      'Trung thực: Khách quan trong việc báo cáo và nhận xét sản phẩm học tập của bạn.',
+      'Trách nhiệm: Hoàn thành đầy đủ các nhiệm vụ học tập được giao cả trên lớp và ở nhà.'
+    ]
+  };
+
+  let activities: any[] = [];
+  let worksheets: any[] = [];
+  let rubrics: any[] = [];
+
+  if (isBai2Tiet2) {
+    // =========================================================================
+    // CHUẨN 100% RUỘT KIẾN THỨC THEO BẢN VIP TRANG 7-9:
+    // KHBD_TOAN9_KNTT_TAP1_FULL_5_CHUONG_NEW_VIP_2026_2027_MUC_TIEU_CHUAN_PL1_PL3.pdf
+    // =========================================================================
+    objectives = {
+      knowledge: [
+        'Hiểu được quy tắc cộng đại số và các bước giải hệ hai phương trình bậc nhất hai ẩn bằng phương pháp cộng đại số.',
+        'Vận dụng thành thạo phương pháp cộng đại số giải hệ hai phương trình trong hai trường hợp: Hệ số của cùng một ẩn bằng nhau (trừ từng vế) hoặc đối nhau (cộng từng vế); Hệ số của cùng một ẩn không bằng nhau và không đối nhau (nhân hai vế với số thích hợp để cân bằng hệ số).',
+        'Sử dụng thành thạo máy tính cầm tay (Casio fx-580VN X / fx-880BTG) kiểm tra nghiệm chính xác của hệ phương trình.',
+        'Nhận biết các trường hợp đặc biệt: Hệ phương trình vô nghiệm (xuất hiện phương trình 0x = k, k ≠ 0) hoặc vô số nghiệm (xuất hiện 0x = 0).'
+      ],
+      coreCompetencies: [
+        'Tự chủ và tự học: Tự giác nghiên cứu SGK Toán 9 KNTT tập 1 (trang 10 - 12), chủ động thực hiện Phiếu học tập số 1 và số 2.',
+        'Giao tiếp và hợp tác: Tích cực thảo luận nhóm, giải thích rõ ràng các bước biến đổi tương đương triệt tiêu ẩn.',
+        'Giải quyết vấn đề và sáng tạo: Linh hoạt lựa chọn giữa phương pháp cộng đại số và phương pháp thế dựa trên đặc điểm của hệ số.'
+      ],
+      subjectCompetencies: [
+        'Năng lực tư duy và lập luận toán học: So sánh hệ số của cùng một ẩn ở hai phương trình để lựa chọn phép cộng hay trừ triệt tiêu ẩn tối ưu.',
+        'Năng lực giải quyết vấn đề toán học: Biến đổi tương đương đưa hệ phương trình phức tạp về dạng chính tắc để giải.',
+        'Năng lực mô hình hóa toán học: Thiết lập hệ phương trình bậc nhất hai ẩn giải quyết bài toán mua sắm bánh mì thực tiễn.',
+        'Năng lực số (1.1.NC1b): Dùng công cụ số MTCT Casio fx-580VN X đối chiếu phương pháp thế và cộng đại số.'
+      ],
+      qualities: [
+        'Chăm chỉ: Tích cực phát biểu, hoàn thành 100% bài tập trong SGK (Luyện tập 2, Luyện tập 3, Bài 1.6).',
+        'Trung thực: Báo cáo trung thực kết quả thảo luận nhóm và tự chấm bài theo thang Rubrics.',
+        'Trách nhiệm: Hợp tác có trách nhiệm với bạn cùng bàn trong các hoạt động nhóm.'
+      ]
+    };
+
+    activities = [
+      {
+        id: 'act-ppct-1',
+        code: 'hd1',
+        title: 'Hoạt động 1: Mở đầu / Khởi động (Tiếp cận Quy tắc cộng đại số)',
+        durationMinutes: 5,
+        objective: 'Kích hoạt nhu cầu tìm phương pháp giải hệ nhanh hơn phương pháp thế khi hệ số đối hoặc bằng nhau.',
+        content: 'Xét hệ phương trình: { 2x + y = 4 (1) ; x - y = 1 (2) }. Nhiệm vụ 1: Giải hệ bằng phương pháp thế. Nhiệm vụ 2: Quan sát hệ số của y (+1 và -1), thử cộng từng vế của hai phương trình để xem điều gì xảy ra.',
+        product: 'HS giải ra nghiệm (5/3; 2/3) bằng cả hai cách và nhận xét: Cách cộng từng vế giúp triệt tiêu ẩn y ngay lập tức (3x = 5 <=> x = 5/3), nhanh và ít nhầm lẫn hơn so với phương pháp thế.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'GV trình chiếu hệ phương trình { 2x + y = 4 ; x - y = 1 }. Yêu cầu dãy 1 giải bằng thế, dãy 2 thử cộng từng vế hai phương trình theo gợi ý. Thời gian 2 phút.',
+            studentAction: 'Dãy 1 rút ẩn x = y + 1 thế vào pt 1. Dãy 2 lấy vế trái cộng vế trái: (2x + y) + (x - y) = 3x, vế phải cộng vế phải: 4 + 1 = 5.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Quan sát học sinh thao tác trên giấy nháp. Nhắc nhở dãy 2 chú ý dấu khi cộng (+y + (-y) = 0).',
+            studentAction: 'Học sinh dãy 2 phát hiện ẩn y bị triệt tiêu, thu được 3x = 5 => x = 5/3. Thay vào tìm y = 2/3.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời 2 đại diện lên bảng (1 em giải thế, 1 em thực hiện cộng từng vế). Cho cả lớp so sánh thời gian và độ phức tạp.',
+            studentAction: 'HS nhận xét: Cách cộng từng vế nhanh hơn rất nhiều, không phải quy đồng mẫu số phức tạp.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'GV chuẩn hóa: Phép biến đổi cộng từng vế để triệt tiêu một ẩn chính là "Quy tắc cộng đại số". Phương pháp này rất mạnh khi hệ số của một ẩn bằng nhau hoặc đối nhau -> Dẫn dắt vào Tiết 2.',
+            studentAction: 'Ghi tựa bài mới: Bài 2. Giải hệ hai phương trình bậc nhất hai ẩn bằng phương pháp cộng đại số (Tiết 2).'
+          }
+        ]
+      },
+      {
+        id: 'act-ppct-2',
+        code: 'hd2',
+        title: 'Hoạt động 2: Hình thành kiến thức mới (Quy tắc cộng đại số & Phân dạng TH1 - TH2)',
+        durationMinutes: 20,
+        objective: 'Nắm vững quy tắc 2 bước cộng đại số; giải thành thạo TH1 (hệ số bằng/đối) và TH2 (nhân cân bằng hệ số) qua Ví dụ 2, 3, 4 SGK KNTT.',
+        content: '1. Khung quy tắc 2 bước SGK KNTT trang 10 (Bước 1: Cộng/trừ từng vế; Bước 2: Giải pt một ẩn rồi suy ra nghiệm).\n2. TH1 (Hệ số bằng nhau hoặc đối nhau):\n   - Ví dụ 2: Giải hệ { 2x + 3y = 7 (1) ; 2x - y = -1 (2) }. Trừ từng vế: 4y = 8 <=> y = 2 => x = 1/2. Nghiệm (1/2; 2).\n   - Ví dụ 3: Giải hệ { 3x - 2y = 4 (1) ; 2x + 2y = 6 (2) }. Cộng từng vế: 5x = 10 <=> x = 2 => y = 1. Nghiệm (2; 1).\n3. TH2 (Hệ số không bằng nhau và không đối nhau):\n   - Ví dụ 4: Giải hệ { 3x + 2y = 7 (1) ; 2x + 3y = 3 (2) }. Nhân (1) với 2, nhân (2) với 3 đưa về { 6x + 4y = 14 ; 6x + 9y = 9 }. Trừ từng vế: 5y = -5 <=> y = -1 => x = 3. Nghiệm (3; -1).',
+        product: 'Sơ đồ quy tắc trong vở; lời giải chi tiết Ví dụ 2, 3, 4 với đầy đủ các bước lập luận, tương đương và kết luận nghiệm; ghi nhớ: Bằng nhau -> Trừ; Đối nhau -> Cộng; Khác nhau -> Nhân cân bằng hệ số.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Phát Phiếu học tập số 1. Yêu cầu nhóm 4 HS đọc mục 2 SGK KNTT (trang 10-12) và hoàn thành các câu hỏi hướng dẫn giải Ví dụ 2, Ví dụ 3, Ví dụ 4.',
+            studentAction: 'Nhận phiếu học tập số 1, bầu nhóm trưởng điều phối và thư ký ghi chép.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Quan sát các nhóm thảo luận. Lưu ý học sinh quy tắc đổi dấu khi trừ cụm (2x - y) trong Ví dụ 2: -(2x - y) = -2x + y, nên 3y - (-y) = 4y. Hướng dẫn nhóm gặp khó khăn ở Ví dụ 4 cách tìm BCNN của 3 và 2 là 6 để nhân cân bằng hệ số.',
+            studentAction: 'Học sinh thực hiện giải chi tiết vào phiếu. Đối chiếu cách nhân cân bằng hệ số của ẩn x hoặc ẩn y.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Gọi đại diện nhóm 1 trình bày Ví dụ 2, nhóm 3 trình bày Ví dụ 3, nhóm 5 trình bày Ví dụ 4 lên bảng.',
+            studentAction: 'Đại diện nhóm báo cáo các bước giải. Các nhóm khác nhận xét, đặt câu hỏi về việc tại sao Ví dụ 2 lại trừ mà Ví dụ 3 lại cộng.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'GV chuẩn hóa bảng quy tắc vàng:\n• Hệ số bằng nhau => TRỪ từng vế hai phương trình.\n• Hệ số đối nhau => CỘNG từng vế hai phương trình.\n• Hệ số khác nhau => NHÂN cả hai vế với số thích hợp để đưa về bằng hoặc đối nhau (thường chọn BCNN).',
+            studentAction: 'Ghi khung kiến thức trọng tâm vào vở ghi lý thuyết.'
+          }
+        ]
+      },
+      {
+        id: 'act-ppct-3',
+        code: 'hd3',
+        title: 'Hoạt động 3: Luyện tập (Củng cố kỹ năng qua Luyện tập 2, 3, Bài 1.6 & Bấm máy MTCT)',
+        durationMinutes: 13,
+        objective: 'Rèn luyện phản xạ tính toán chính xác, kỹ năng giải hệ phương trình bằng cộng đại số qua Luyện tập 2, Luyện tập 3, Bài 1.6 SGK KNTT và bấm máy tính Casio kiểm tra.',
+        content: '1. Luyện tập 2 (trang 11 SGK KNTT): Giải hệ { 3x + 2y = 6 ; 2x - 2y = 14 }.\n2. Luyện tập 3 (trang 12 SGK KNTT): Giải hệ { 4x + 3y = 6 ; 2x + y = 4 }.\n3. Bài 1.6 (trang 12 SGK KNTT):\n   a) { x - y = 8 ; x + y = 2 }\n   b) { 3x + y = 3 ; 2x - y = 7 }.\n4. Thực hành bấm MTCT Casio fx-580VN X (MENU 9 1 2) kiểm tra nghiệm.',
+        product: 'Bài giải chuẩn mực trong vở:\n- LT2: Cộng hai vế được 5x = 20 <=> x = 4 => y = -3. Nghiệm (4; -3).\n- LT3: Nhân pt (2) với 2: { 4x + 3y = 6 ; 4x + 2y = 8 }. Trừ từng vế: y = -2 => x = 3. Nghiệm (3; -2).\n- Bài 1.6a: Cộng hai vế: 2x = 10 <=> x = 5 => y = -3. Nghiệm: (5; -3).\n- Bài 1.6b: Cộng hai vế: 5x = 10 <=> x = 2 => y = -3. Nghiệm: (2; -3).',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Giao 4 bài tập: Tổ 1 làm LT2; Tổ 2 làm LT3; Tổ 3 làm Bài 1.6a; Tổ 4 làm Bài 1.6b. Thời gian 5 phút. Sau đó dùng MTCT kiểm tra lại nghiệm.',
+            studentAction: 'Học sinh làm việc độc lập vào vở bài tập, chuẩn bị đổi vở kiểm tra chéo.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Bao quát lớp, hướng dẫn thao tác phím MTCT Casio: MENU -> 9 -> 1 -> 2 -> Nhập hệ số a1, b1, c1, a2, b2, c2 -> Nhấn = để đọc nghiệm x, y.',
+            studentAction: 'Giải bài tập ra vở, bấm MTCT kiểm tra kết quả đối chiếu với phép tính tay.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời 4 học sinh đại diện 4 tổ lên bảng trình bày. Chiếu bài làm của 1 học sinh dùng camera vật thể.',
+            studentAction: 'Học sinh đổi chéo vở chấm bài cho bạn cùng bàn theo barem lời giải trên bảng.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Nhận xét, chỉ ra các lỗi sai học sinh hay mắc: Quên nhân ở vế phải (bên dấu =), sai dấu khi trừ số âm. Đánh giá cho điểm các bạn làm bài xuất sắc.',
+            studentAction: 'Chữa bài cẩn thận vào vở ghi, ghi chú lỗi sai cần tránh.'
+          }
+        ]
+      },
+      {
+        id: 'act-ppct-4',
+        code: 'hd4',
+        title: 'Hoạt động 4: Vận dụng & Hướng dẫn tự học (Tranh luận toán học & Bài toán thực tiễn)',
+        durationMinutes: 7,
+        objective: 'Vận dụng giải quyết bài toán thực tế; phân tích sâu tình huống Tranh luận (SGK KNTT trang 12) để linh hoạt lựa chọn phương pháp giải tối ưu.',
+        content: '1. Mục Tranh luận (SGK KNTT trang 12): Cho hệ { x - 2y = 1 ; 3x + 2y = 11 }. Bạn Tròn đề xuất giải bằng phương pháp thế (rút x = 2y + 1), bạn Vuông đề xuất giải bằng phương pháp cộng đại số (cộng vế mất y ngay). Em đồng ý với ai?\n2. Bài toán thực tế tiệm bánh mì:\n   - Buổi sáng: 30 bánh mì pate + 20 bánh mì trứng = 1.100.000 đồng.\n   - Buổi chiều: 20 bánh mì pate + 20 bánh mì trứng = 900.000 đồng.\n   Tìm giá bán mỗi loại bánh mì?\n3. Hướng dẫn tự học ở nhà.',
+        product: '1. Tranh luận: Cả hai bạn đều đúng! Bạn Vuông nhanh hơn vì hệ số của y đối nhau (+2 và -2) nên cộng vế triệt tiêu ngay; bạn Tròn cũng rất thuận lợi vì hệ số của x ở pt thứ nhất bằng 1 nên rút x = 2y + 1 dễ dàng. Tùy đặc điểm hệ số mà chọn cách ngắn nhất.\n2. Bài toán bánh mì: Gọi giá bánh pate là x (nghìn đồng), bánh trứng là y (nghìn đồng). Hệ pt: { 30x + 20y = 1100 ; 20x + 20y = 900 }. Trừ từng vế: 10x = 200 <=> x = 20 => y = 25. Giá bánh pate 20.000 đồng, bánh trứng 25.000 đồng.\n3. Ghi nhớ bài tập về nhà: Bài 1.7, 1.8, 1.9 SGK trang 12, 13; chuẩn bị bài mới.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Chiếu tình huống Tranh luận giữa bạn Tròn và Vuông (SGK trang 12) và bài toán tiệm bánh mì. Yêu cầu thảo luận cặp đôi 2 phút.',
+            studentAction: 'Lắng nghe yêu cầu, thảo luận với bạn cùng bàn về ưu điểm của từng phương pháp.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Khuyến khích học sinh phân tích lý lẽ của cả 2 bạn; gọi 1 học sinh lên lập hệ phương trình bánh mì.',
+            studentAction: 'Trao đổi ý kiến, lập hệ phương trình: 30x + 20y = 1100 và 20x + 20y = 900.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời đại diện cặp đôi phát biểu ý kiến tranh luận. Lớp trưởng nhận xét bài giải trên bảng.',
+            studentAction: 'HS phát biểu: Cả hai bạn đều đúng, nhưng cách cộng đại số của Vuông chỉ cần 1 dòng là triệt tiêu ẩn y; cách của Tròn cũng rất tốt vì hệ số x bằng 1.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'GV tổng kết bài học: Cần quan sát kỹ hệ số của hệ phương trình trước khi quyết định chọn phương pháp thế hay cộng đại số để có lời giải ngắn gọn nhất. Dặn dò nhiệm vụ về nhà: Bài 1.7, 1.8, 1.9 SGK trang 12, 13.',
+            studentAction: 'Lắng nghe dặn dò, ghi chép bài tập về nhà vào sổ tay học tập.'
+          }
+        ]
+      }
+    ];
+
+    worksheets = [
+      {
+        title: 'PHIẾU HỌC TẬP SỐ 1: KHÁM PHÁ QUY TẮC CỘNG ĐẠI SỐ (SGK KNTT TOÁN 9 TẬP 1)',
+        content: `Họ và tên học sinh: .................................................... Lớp: ${effectiveClass}
+BÀI 2: GIẢI HỆ HAI PHƯƠNG TRÌNH BẬC NHẤT HAI ẨN (TIẾT 2)
+
+Nhiệm vụ 1: Trường hợp hệ số bằng nhau hoặc đối nhau
+Cho hệ phương trình (Ví dụ 2): { 2x + 3y = 7 (1) ; 2x - y = -1 (2) }
+1. Hệ số của ẩn x ở hai phương trình là: a1 = ......... ; a2 = ......... (Bằng nhau / Đối nhau?)
+2. Thực hiện phép toán triệt tiêu ẩn x: Lấy pt (1) ................ pt (2)
+   Thu được phương trình một ẩn: ....................................... <=> y = .........
+3. Thay giá trị y vừa tìm được vào pt (1): ....................................... <=> x = .........
+4. Kết luận nghiệm của hệ phương trình: (x; y) = (.........; .........)
+
+Nhiệm vụ 2: Trường hợp hệ số không bằng nhau và không đối nhau
+Cho hệ phương trình (Ví dụ 4): { 3x + 2y = 7 (1) ; 2x + 3y = 3 (2) }
+1. Tìm BCNN của hệ số của x (3 và 2): BCNN(3; 2) = .........
+2. Nhân hai vế của pt (1) với ......... và nhân hai vế của pt (2) với .........
+   Ta được hệ mới tương đương: { ................................. ; ................................. }
+3. Trừ từng vế hai phương trình, tìm được: y = ......... => x = .........
+4. Kiểm tra lại bằng máy tính Casio fx-580VN X: MENU 9 1 2 -> Nghiệm hiển thị: x = .....; y = .....`
+      },
+      {
+        title: 'PHIẾU HỌC TẬP SỐ 2: BÀI TẬP PHÂN HÓA 3 MỨC ĐỘ (KNTT)',
+        content: `Họ và tên: ........................................................... Nhóm: .........
+Mức 1 (Nhận biết): Giải hệ phương trình { x - y = 8 ; x + y = 2 } bằng phương pháp cộng đại số:
+   Lời giải: ............................................................................
+Mức 2 (Thông hiểu): Giải hệ phương trình { 4x + 3y = 6 ; 2x + y = 4 }:
+   Lời giải: ............................................................................
+Mức 3 (Vận dụng): Giải bài toán thực tế tiệm bánh mì bằng cách lập hệ phương trình:
+   { 30x + 20y = 1100 ; 20x + 20y = 900 }
+   Đáp số: Bánh mì pate: ................ nghìn đồng ; Bánh mì trứng: ................ nghìn đồng.`
+      }
+    ];
+
+    rubrics = [
+      {
+        criterion: '1. Nhận diện hệ số và lựa chọn phép cộng/trừ triệt tiêu ẩn',
+        level1: 'Chưa phân biệt được khi nào cộng, khi nào trừ; còn nhầm lẫn dấu (0 - 0.25đ)',
+        level2: 'Nhận biết được hệ số bằng/đối nhau và chọn đúng phép toán trong trường hợp cơ bản (0.5đ)',
+        level3: 'Xác định nhanh chóng, linh hoạt nhân hệ số thích hợp trong mọi trường hợp (1.0đ)'
+      },
+      {
+        criterion: '2. Kỹ năng biến đổi tương đương và tính toán chính xác',
+        level1: 'Còn sai sót dấu khi trừ số âm hoặc quên nhân ở vế phải (0 - 0.25đ)',
+        level2: 'Tính toán đúng nghiệm trong các bài tập mức độ cơ bản (0.5đ)',
+        level3: 'Trình bày mẫu mực từng dòng tương đương, không sai sót tính toán (1.0đ)'
+      },
+      {
+        criterion: '3. Kỹ năng sử dụng máy tính cầm tay Casio kiểm tra nghiệm',
+        level1: 'Chưa nhớ cú pháp bấm phím trên MTCT (0đ)',
+        level2: 'Bấm được phím MENU 9 1 2 nhưng nhập hệ số còn chậm (0.25đ)',
+        level3: 'Thao tác thuần thục, kiểm tra đối chiếu kết quả ngay sau khi giải tay (0.5đ)'
+      },
+      {
+        criterion: '4. Vận dụng mô hình hóa bài toán thực tế',
+        level1: 'Chưa thiết lập được hệ phương trình từ đề bài (0đ)',
+        level2: 'Lập được hệ phương trình nhưng giải còn lúng túng (0.25đ)',
+        level3: 'Lập hệ chính xác, giải nhanh bằng cộng đại số và kết luận đầy đủ đơn vị (0.5đ)'
+      }
+    ];
+  } else if (isBai1Tiet1) {
+    objectives = {
+      knowledge: [
+        'Nhận biết khái niệm phương trình bậc nhất hai ẩn ax + by = c (với a và b không đồng thời bằng 0).',
+        'Hiểu và xác định được nghiệm của phương trình bậc nhất hai ẩn: Cặp số (x0; y0) thỏa mãn đẳng thức ax0 + by0 = c.',
+        'Hiểu tính chất tập nghiệm: Phương trình bậc nhất hai ẩn luôn có vô số nghiệm và tập nghiệm được biểu diễn bởi một đường thẳng trên mặt phẳng tọa độ Oxy.',
+        'Biết cách biểu diễn hình học tập nghiệm của phương trình bậc nhất hai ẩn trên hệ trục tọa độ và sử dụng phần mềm GeoGebra để trực quan hóa.'
+      ],
+      coreCompetencies: [
+        'Tự chủ và tự học: Tự giác nghiên cứu SGK Toán 9 KNTT tập 1 mục 1 (trang 6 - 8), thực hiện Phiếu học tập số 1.',
+        'Giao tiếp và hợp tác: Tích cực thảo luận nhóm, giải thích rõ ràng cách kiểm tra nghiệm và biểu diễn tập nghiệm.',
+        'Giải quyết vấn đề và sáng tạo: Mô hình hóa các tình huống mua sắm và cước taxi đời sống bằng phương trình bậc nhất hai ẩn.'
+      ],
+      subjectCompetencies: [
+        'Năng lực tư duy và lập luận toán học: Nhận diện cấu trúc bậc nhất của các ẩn x, y.',
+        'Năng lực mô hình hóa toán học thông qua bài toán thực tế đời sống.',
+        entry.digitalCompetency ? `Năng lực số: ${entry.digitalCompetency}` : 'Năng lực số: 1.1.NC1b: Tìm kiếm mô hình số và trực quan hóa đường thẳng trên GeoGebra.'
+      ],
+      qualities: [
+        'Chăm chỉ: Tích cực tham gia xây dựng bài, vẽ hình cẩn thận chính xác.',
+        'Trung thực: Khách quan trong việc báo cáo và nhận xét sản phẩm học tập.',
+        'Trách nhiệm: Hoàn thành đầy đủ các nhiệm vụ học tập trên lớp.'
+      ]
+    };
+
+    activities = [
+      {
+        id: `act-ppct-1`,
+        code: 'hd1',
+        title: 'Hoạt động 1: Mở đầu / Khởi động (Tình huống mua sắm thực tiễn)',
+        durationMinutes: 7,
+        objective: 'Kích hoạt nhu cầu tìm hiểu phương trình chứa hai đại lượng chưa biết từ bài toán thực tế.',
+        content: 'Bài toán thực tế: Bác An đi siêu thị mua 2 kg táo và 1 kg cam hết tổng cộng 100.000 đồng. Gọi giá 1 kg táo là x (nghìn đồng) và 1 kg cam là y (nghìn đồng). Hãy lập hệ thức liên hệ giữa x và y.',
+        product: 'Học sinh thiết lập được biểu thức: 2x + y = 100 và nhận xét: Biểu thức này chứa hai ẩn số x và y, đều có bậc là 1.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Chiếu hình ảnh quầy hoa quả và bài toán mua táo và cam của bác An. Yêu cầu làm việc cá nhân trong 2 phút.',
+            studentAction: 'Quan sát đề bài, xác định các đại lượng: số lượng táo (2 kg), số lượng cam (1 kg), tổng tiền (100 nghìn đồng).'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Quan sát lớp, gợi ý: Số tiền mua táo là bao nhiêu? Số tiền mua cam là bao nhiêu?',
+            studentAction: 'Ghi nháp: 2x + y = 100.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời đại diện 1 HS phát biểu, các HS khác nhận xét.',
+            studentAction: 'HS nêu biểu thức 2x + y = 100. Nhận xét về số ẩn trong biểu thức.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'GV chốt: Hệ thức 2x + y = 100 là ví dụ về "Phương trình bậc nhất hai ẩn x và y" -> Dẫn dắt vào bài mới.',
+            studentAction: 'Ghi tựa bài mới vào vở: Tiết 1: Phương trình bậc nhất 2 ẩn.'
+          }
+        ]
+      },
+      {
+        id: `act-ppct-2`,
+        code: 'hd2',
+        title: 'Hoạt động 2: Hình thành kiến thức mới (Khái niệm & Tập nghiệm)',
+        durationMinutes: 20,
+        objective: 'Nắm vững định nghĩa phương trình bậc nhất hai ẩn ax + by = c, khái niệm nghiệm và biểu diễn hình học trên mặt phẳng tọa độ Oxy.',
+        content: '1. Định nghĩa: ax + by = c (a, b không đồng thời bằng 0).\n2. Ví dụ 1: 2x - y = 3; 0x + 2y = 4; 3x + 0y = 6.\n3. Cặp số (x0; y0) thỏa mãn là một nghiệm. Phương trình luôn có vô số nghiệm.\n4. Trực quan hóa GeoGebra: Tập nghiệm được biểu diễn bởi đường thẳng ax + by = c trên mp Oxy.',
+        product: 'Định nghĩa trong vở; lời giải Ví dụ 1; hình vẽ phác đường thẳng biểu diễn tập nghiệm.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Phát Phiếu học tập số 1. Yêu cầu nhóm 4 HS nghiên cứu mục 1 SGK Toán 9 KNTT trang 6-8.',
+            studentAction: 'Đọc SGK, thảo luận các đặc điểm của phương trình ax + by = c.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Hướng dẫn các nhóm kiểm tra cặp số (1; -1) có là nghiệm của 2x - y = 3 không (2(1) - (-1) = 3 -> Thỏa mãn).',
+            studentAction: 'Thực hiện thay số kiểm tra nghiệm và biểu diễn y theo x: y = 2x - 3.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời đại diện nhóm lên bảng vẽ đường thẳng y = 2x - 3 qua 2 điểm (0; -3) và (1.5; 0). Chiếu GeoGebra đối chiếu.',
+            studentAction: 'Nhận xét về số lượng nghiệm và vị trí các điểm nghiệm trên mặt phẳng tọa độ.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Chuẩn hóa kiến thức: Phương trình bậc nhất hai ẩn luôn có vô số nghiệm, tập nghiệm được biểu diễn bởi một đường thẳng.',
+            studentAction: 'Ghi nhớ định lý và cách vẽ đường thẳng tập nghiệm.'
+          }
+        ]
+      },
+      {
+        id: `act-ppct-3`,
+        code: 'hd3',
+        title: 'Hoạt động 3: Luyện tập (Nhận biết phương trình & Kiểm tra nghiệm)',
+        durationMinutes: 12,
+        objective: 'Rèn luyện kỹ năng phân biệt phương trình bậc nhất hai ẩn và kiểm tra nghiệm cặp số.',
+        content: 'Bài 1: Trong các phương trình sau, pt nào là pt bậc nhất hai ẩn: a) 3x - 2y = 5 ; b) 2x^2 + y = 1 ; c) 0x + 0y = 4 ; d) 4x - 0y = 8.\nBài 2: Cặp số nào trong các cặp (1; 3), (2; 1), (0; 5) là nghiệm của 2x + y = 5?',
+        product: 'Bài giải chính xác trong vở: Bài 1: a và d là pt bậc nhất hai ẩn. Bài 2: Cặp (2; 1) và (0; 5) là nghiệm (2*2+1=5; 2*0+5=5).',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Chiếu 2 bài tập lên bảng, yêu cầu làm việc cá nhân trong 4 phút.',
+            studentAction: 'Làm bài độc lập vào vở ghi.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Đi quanh lớp hỗ trợ học sinh nhận biết hệ số a, b.',
+            studentAction: 'Thực hiện thay cặp số vào phương trình kiểm tra đẳng thức đúng/sai.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời 2 HS lên bảng giải, lớp nhận xét.',
+            studentAction: 'Giải thích tại sao 0x + 0y = 4 không phải là pt bậc nhất hai ẩn (do cả a và b đều bằng 0).'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Tuyên dương các bạn làm đúng, nhắc lại điều kiện a và b không đồng thời bằng 0.',
+            studentAction: 'Sửa bài vào vở.'
+          }
+        ]
+      },
+      {
+        id: `act-ppct-4`,
+        code: 'hd4',
+        title: 'Hoạt động 4: Vận dụng (Bài toán cước taxi thực tế)',
+        durationMinutes: 6,
+        objective: 'Mô hình hóa bài toán tính tiền taxi có cước mở cửa và cước theo km.',
+        content: 'Giá cước mở cửa của hãng taxi là 10.000 đồng, mỗi km tiếp theo giá 14.000 đồng. Gọi x là quãng đường đi (km), y là tổng tiền phải trả (nghìn đồng). Viết phương trình bậc nhất hai ẩn liên hệ giữa x và y.',
+        product: 'Phương trình: y = 14x + 10 (nghìn đồng) hay 14x - y = -10.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Giao bài toán taxi, hướng dẫn về nhà làm bài tập 1.1 đến 1.5 SGK trang 9.',
+            studentAction: 'Ghi chép đề bài và ghi nhớ bài tập về nhà.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Gợi ý thiết lập công thức tổng tiền = giá mở cửa + giá mỗi km * số km.',
+            studentAction: 'Phác thảo nhanh lời giải: y = 14x + 10.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Gọi 1 HS phát biểu nhanh kết quả.',
+            studentAction: 'Trình bày phương trình 14x - y = -10.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Đánh giá tiết học, dặn dò chuẩn bị Tiết 2: Hệ phương trình bậc nhất hai ẩn.',
+            studentAction: 'Lắng nghe dặn dò.'
+          }
+        ]
+      }
+    ];
+
+    worksheets = [
+      {
+        title: `PHIẾU HỌC TẬP SỐ 1: BÀI 1 (TIẾT 1) - PHƯƠNG TRÌNH BẬC NHẤT HAI ẨN`,
+        content: `Họ và tên: ........................................... Lớp: ${className || effectiveClass}
+1. Điền vào chỗ trống: Phương trình bậc nhất hai ẩn x và y là hệ thức dạng ax + by = c, trong đó a, b, c là ......... (với a và b .........).
+2. Kiểm tra xem cặp số (x; y) = (2; 1) có phải là nghiệm của phương trình 2x + y = 5 không:
+   Thay x = 2, y = 1 vào vế trái: 2*(....) + (....) = ........
+   Kết luận: Cặp số (2; 1) ........................................ nghiệm của phương trình.`
+      }
+    ];
+
+    rubrics = [
+      {
+        criterion: 'Nhận diện phương trình bậc nhất hai ẩn',
+        level1: 'Chưa phân biệt được bậc của ẩn (0 - 0.25đ)',
+        level2: 'Nhận biết đúng dạng ax + by = c (0.5đ)',
+        level3: 'Xác định chính xác hệ số a, b, c và điều kiện a, b không đồng thời bằng 0 (1.0đ)'
+      }
+    ];
+  } else if (isBai1Tiet2) {
+    objectives = {
+      knowledge: [
+        'Hiểu khái niệm hệ hai phương trình bậc nhất hai ẩn dạng { ax + by = c ; a\'x + b\'y = c\' }.',
+        'Hiểu khái niệm nghiệm của hệ hai phương trình bậc nhất hai ẩn: Cặp số (x0; y0) là nghiệm của hệ khi nó đồng thời là nghiệm chung của cả hai phương trình.',
+        'Hiểu ý nghĩa hình học của hệ hai phương trình bậc nhất hai ẩn: Nghiệm của hệ là tọa độ giao điểm của hai đường thẳng biểu diễn tập nghiệm của từng phương trình trên mặt phẳng Oxy (cắt nhau: 1 nghiệm; song song: vô nghiệm; trùng nhau: vô số nghiệm).',
+        'Ứng dụng phần mềm số GeoGebra để trực quan hóa hai đường thẳng và xác định nghiệm giao điểm.'
+      ],
+      coreCompetencies: [
+        'Tự chủ và tự học: Tự nghiên cứu SGK Toán 9 KNTT tập 1 mục 2 (trang 8 - 9), hoàn thành Phiếu học tập số 2.',
+        'Giao tiếp và hợp tác: Trao đổi nhóm phân tích điều kiện hai phương trình đồng thời thỏa mãn.',
+        'Giải quyết vấn đề và sáng tạo: Thiết lập hệ phương trình từ bài toán hai điều kiện trong đời sống.'
+      ],
+      subjectCompetencies: [
+        'Năng lực tư duy và lập luận toán học: Suy luận mối quan hệ giữa nghiệm đại số và giao điểm hình học.',
+        'Năng lực mô hình hóa toán học: Chuyển đổi ngôn ngữ thực tế sang hệ hai phương trình bậc nhất hai ẩn.',
+        entry.digitalCompetency ? `Năng lực số: ${entry.digitalCompetency}` : 'Năng lực số: 5.3.NC1a: Dùng GeoGebra trực quan hóa tập nghiệm trên mặt phẳng tọa độ Oxy.'
+      ],
+      qualities: [
+        'Chăm chỉ: Tự giác hoàn thành các bài tập kiểm tra nghiệm.',
+        'Trung thực: Báo cáo trung thực kết quả hoạt động nhóm.',
+        'Trách nhiệm: Có ý thức bảo quản thiết bị học tập số và phối hợp nhóm hiệu quả.'
+      ]
+    };
+
+    activities = [
+      {
+        id: `act-ppct-1`,
+        code: 'hd1',
+        title: 'Hoạt động 1: Mở đầu / Khởi động (Tình huống hai điều kiện đồng thời)',
+        durationMinutes: 7,
+        objective: 'Kích hoạt nhu cầu tìm kiếm một cặp giá trị thỏa mãn đồng thời hai điều kiện trong bài toán thực tế.',
+        content: 'Bài toán mở đầu: Bạn Nam có tổng cộng 10 tờ tiền mệnh giá 10.000 đồng và 20.000 đồng với tổng số tiền là 160.000 đồng. Gọi x là số tờ 10.000đ và y là số tờ 20.000đ. Hãy lập hai hệ thức liên hệ giữa x và y.',
+        product: 'Học sinh viết được hai phương trình: x + y = 10 và 10x + 20y = 160. Cặp (x; y) phải thỏa mãn cả hai phương trình.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Chiếu đề bài toán đếm tiền của Nam lên màn hình. Yêu cầu học sinh suy nghĩ tìm hai hệ thức liên hệ.',
+            studentAction: 'Đọc đề, xác định hai điều kiện: tổng số tờ tiền và tổng số tiền.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Gợi ý: Phương trình thứ nhất biểu diễn tổng số tờ tiền, phương trình thứ hai biểu diễn tổng giá trị tiền.',
+            studentAction: 'Thiết lập: x + y = 10 và 10x + 20y = 160.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời đại diện học sinh nêu hai phương trình vừa lập và nhận xét.',
+            studentAction: 'HS trình bày hai hệ thức và nhận xét cặp số (x; y) cần thỏa mãn đồng thời cả hai hệ thức.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'GV chốt: Hai phương trình này tạo thành một "Hệ hai phương trình bậc nhất hai ẩn" -> Dẫn dắt vào bài mới.',
+            studentAction: 'Ghi tựa bài vào vở: Tiết 2: Hệ phương trình bậc nhất 2 ẩn.'
+          }
+        ]
+      },
+      {
+        id: `act-ppct-2`,
+        code: 'hd2',
+        title: 'Hoạt động 2: Hình thành kiến thức mới (Khái niệm hệ & Ý nghĩa hình học)',
+        durationMinutes: 20,
+        objective: 'Nắm vững định nghĩa hệ hai phương trình bậc nhất hai ẩn, khái niệm nghiệm và ý nghĩa hình học của tập nghiệm.',
+        content: '1. Định nghĩa hệ hai phương trình bậc nhất hai ẩn dạng { ax + by = c ; a\'x + b\'y = c\' }.\n2. Cặp (x0; y0) là nghiệm của hệ khi nó là nghiệm chung của cả hai phương trình.\n3. Minh họa hình học: Trên mặt phẳng tọa độ Oxy, mỗi phương trình biểu diễn bởi một đường thẳng (d1) và (d2). Nghiệm của hệ là tọa độ giao điểm của (d1) và (d2).\n- (d1) cắt (d2): Hệ có 1 nghiệm duy nhất.\n- (d1) // (d2): Hệ vô nghiệm.\n- (d1) trùng (d2): Hệ có vô số nghiệm.',
+        product: 'Định nghĩa hệ phương trình trong vở; bảng nhận xét vị trí tương đối của hai đường thẳng và số nghiệm của hệ; hình vẽ trên GeoGebra.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Phát Phiếu học tập số 2. Yêu cầu nhóm nghiên cứu mục 2 SGK Toán 9 KNTT trang 8-9.',
+            studentAction: 'Đọc SGK, thảo luận các khái niệm nghiệm chung và vị trí tương đối của hai đường thẳng.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Chiếu phần mềm GeoGebra vẽ hai đường thẳng x + y = 10 và x + 2y = 16, yêu cầu quan sát giao điểm.',
+            studentAction: 'Quan sát giao điểm tại (4; 6) trên đồ thị, thay x = 4, y = 6 vào cả hai phương trình để kiểm tra nghiệm.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời đại diện nhóm trình bày nhận xét về số điểm chung của hai đường thẳng và số nghiệm của hệ.',
+            studentAction: 'Đại diện phát biểu: Hai đường thẳng cắt nhau tại 1 điểm thì hệ có 1 nghiệm duy nhất.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Chuẩn hóa định lý: Nghiệm của hệ hai phương trình bậc nhất hai ẩn là tọa độ giao điểm của hai đường thẳng trên mặt phẳng tọa độ Oxy.',
+            studentAction: 'Ghi nhớ kiến thức cốt lõi và 3 trường hợp số nghiệm vào vở.'
+          }
+        ]
+      },
+      {
+        id: `act-ppct-3`,
+        code: 'hd3',
+        title: 'Hoạt động 3: Luyện tập (Kiểm tra nghiệm & Đếm số nghiệm)',
+        durationMinutes: 12,
+        objective: 'Rèn luyện kỹ năng kiểm tra một cặp số có là nghiệm của hệ hai phương trình hay không.',
+        content: 'Bài 1: Cặp số (2; 1) có phải là nghiệm của hệ { 2x + y = 5 ; x - 2y = 0 } không?\nBài 2: Cho hệ { x + y = 3 ; 2x + 2y = 6 }. Hãy nhận xét vị trí tương đối của hai đường thẳng và kết luận số nghiệm.',
+        product: 'Bài giải chính xác trong vở: Bài 1: Cặp (2; 1) là nghiệm vì 2(2)+1=5 và 2-2(1)=0. Bài 2: Hai đường thẳng trùng nhau nên hệ có vô số nghiệm.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Chiếu bài tập luyện tập, yêu cầu học sinh làm việc cá nhân trong 4 phút.',
+            studentAction: 'Làm bài độc lập vào vở.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Theo dõi tiến độ, hỗ trợ học sinh yếu nắm quy tắc thay cặp số vào cả hai phương trình.',
+            studentAction: 'Tính giá trị hai vế của từng phương trình trong hệ.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Gọi 2 học sinh lên bảng giải, tổ chức lớp nhận xét chéo.',
+            studentAction: 'Học sinh trên bảng trình bày lời giải, các bạn dưới lớp nhận xét.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Tuyên dương học sinh làm đúng, lưu ý cặp số phải thỏa mãn cả 2 phương trình mới là nghiệm của hệ.',
+            studentAction: 'Sửa lỗi và hoàn thiện bài giải.'
+          }
+        ]
+      },
+      {
+        id: `act-ppct-4`,
+        code: 'hd4',
+        title: 'Hoạt động 4: Vận dụng (Mô hình hóa thực tiễn & Hướng dẫn về nhà)',
+        durationMinutes: 6,
+        objective: 'Ứng dụng hệ phương trình giải quyết tình huống thực tế và định hướng tự học.',
+        content: 'Tìm hai số biết tổng của chúng bằng 100 và hiệu của chúng bằng 40. Hướng dẫn lập hệ phương trình { x + y = 100 ; x - y = 40 } và chuẩn bị phương pháp thế ở Bài 2.',
+        product: 'Hệ phương trình lập được trong vở và ghi chép bài tập về nhà.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Chiếu bài toán tìm hai số và giao bài tập về nhà 1.6 đến 1.9 SGK trang 10.',
+            studentAction: 'Ghi chép nhiệm vụ về nhà.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Gợi ý: Gọi số lớn là x, số bé là y. Tổng là x + y, hiệu là x - y.',
+            studentAction: 'Phác thảo hệ phương trình: x + y = 100 và x - y = 40.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời 1 học sinh đọc nhanh hệ phương trình thiết lập.',
+            studentAction: 'Học sinh phát biểu hệ phương trình.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Đánh giá tiết học, dặn dò học sinh xem trước Bài 2: Giải hệ hai phương trình bậc nhất hai ẩn.',
+            studentAction: 'Lắng nghe giáo viên kết luận.'
+          }
+        ]
+      }
+    ];
+
+    worksheets = [
+      {
+        title: `PHIẾU HỌC TẬP SỐ 2: BÀI 1 (TIẾT 2) - HỆ PHƯƠNG TRÌNH BẬC NHẤT HAI ẨN`,
+        content: `Họ và tên: ........................................... Lớp: ${className || effectiveClass}
+1. Điền vào chỗ trống: Hệ hai phương trình bậc nhất hai ẩn có dạng { ax + by = c ; a'x + b'y = c' }.
+   Cặp số (x0; y0) là nghiệm của hệ khi nó là ........................................ của cả hai phương trình.
+2. Kiểm tra xem cặp số (x; y) = (2; 1) có là nghiệm của hệ { 2x + y = 5 ; x - 2y = 0 } không:
+   - Thay vào PT (1): 2*(....) + (....) = ........ => (Thỏa mãn / Không thỏa mãn)
+   - Thay vào PT (2): (....) - 2*(....) = ........ => (Thỏa mãn / Không thỏa mãn)
+   Kết luận: Cặp số (2; 1) ........................................ nghiệm của hệ phương trình.
+3. Nhận xét vị trí tương đối của hai đường thẳng trên GeoGebra:
+   - Cắt nhau tại 1 điểm: Hệ có ........ nghiệm duy nhất.
+   - Song song với nhau: Hệ ........................................ nghiệm.
+   - Trùng nhau: Hệ có ........................................ nghiệm.`
+      }
+    ];
+
+    rubrics = [
+      {
+        criterion: '1. Nhận biết hệ hai phương trình bậc nhất hai ẩn',
+        level1: 'Chưa nhận biết đúng hệ phương trình (0 - 0.25đ)',
+        level2: 'Nhận diện đúng hệ nhưng chưa giải thích được điều kiện a, b (0.5đ)',
+        level3: 'Nhận diện chính xác và phân tích rõ cấu trúc từng phương trình (1.0đ)'
+      },
+      {
+        criterion: '2. Kiểm tra nghiệm của hệ hai phương trình',
+        level1: 'Chỉ thay vào một phương trình và vội kết luận (0 - 0.25đ)',
+        level2: 'Thay vào cả hai phương trình nhưng tính toán còn nhầm dấu (0.5đ)',
+        level3: 'Thay chính xác, tính toán cẩn thận và kết luận chuẩn xác (1.0đ)'
+      },
+      {
+        criterion: '3. Ý nghĩa hình học của tập nghiệm',
+        level1: 'Chưa liên hệ được nghiệm với giao điểm trên mặt phẳng tọa độ (0 - 0.25đ)',
+        level2: 'Nêu được quan hệ cắt nhau thì có 1 nghiệm nhưng chưa rõ trường hợp vô nghiệm (0.5đ)',
+        level3: 'Nắm vững cả 3 trường hợp: cắt nhau (1 nghiệm), song song (vô nghiệm), trùng nhau (vô số nghiệm) (1.0đ)'
+      }
+    ];
+  } else {
+    // Nội dung bài dạy chuẩn kiến thức cho các tiết khác
+    activities = [
+      {
+        id: `act-ppct-1`,
+        code: 'hd1',
+        title: `Hoạt động 1: Mở đầu / Khởi động (Tình huống thực tiễn ${entry.lessonName.split('(')[0]})`,
+        durationMinutes: 7,
+        objective: 'Tạo tâm thế hứng thú học tập, gợi mở vấn đề toán học thực tiễn cần giải quyết.',
+        content: `Quan sát tình huống dẫn dắt thực tế liên quan đến ${entry.lessonName}. Nêu câu hỏi kết nối kiến thức cũ sang bài mới.`,
+        product: 'Học sinh phát hiện vấn đề toán học cần nghiên cứu và ghi nhận mục tiêu bài học vào vở.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: `Chiếu tình huống thực tế liên quan đến ${entry.lessonName}. Nêu câu hỏi gợi mở kết nối kiến thức cũ sang bài mới.`,
+            studentAction: 'Quan sát màn chiếu, lắng nghe nhiệm vụ và suy nghĩ cá nhân trong 1 phút.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Quan sát phản ứng của học sinh, khích lệ các em liên hệ kiến thức đã học.',
+            studentAction: 'Trao đổi nhanh với bạn cùng bàn, dự đoán câu trả lời.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Gọi 2 học sinh nêu ý kiến. Hướng dẫn lớp nhận xét.',
+            studentAction: 'Học sinh trình bày câu trả lời sơ khởi.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: `Khẳng định tính cần thiết của bài toán, dẫn dắt vào bài mới: ${entry.lessonName}.`,
+            studentAction: 'Lắng nghe giáo viên tổng kết và ghi tựa bài vào vở.'
+          }
+        ]
+      },
+      {
+        id: `act-ppct-2`,
+        code: 'hd2',
+        title: `Hoạt động 2: Hình thành kiến thức mới (${entry.chapter})`,
+        durationMinutes: 20,
+        objective: `Nắm vững định nghĩa, định lý và các quy tắc cốt lõi của ${entry.lessonName}.`,
+        content: `Nghiên cứu nội dung SGK kết hợp hoàn thành Phiếu học tập số 1 về ${entry.lessonName}.`,
+        product: 'Khung kiến thức chuẩn hóa trong vở ghi và bài giải ví dụ mẫu trên phiếu học tập.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Phát Phiếu học tập số 1. Yêu cầu làm việc theo nhóm 4 HS tìm hiểu quy tắc và các bước giải.',
+            studentAction: 'Nhận phiếu học tập, phân công nhiệm vụ trong nhóm.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Đi quanh các nhóm, hướng dẫn hỗ trợ giải quyết khó khăn, nhắc nhở sử dụng công cụ số.',
+            studentAction: 'Thảo luận, thực hiện tính toán hoặc mô phỏng trên phần mềm để rút ra kết luận.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Mời đại diện một nhóm lên bảng trình bày. Chiếu bài làm của các nhóm khác lên màn hình.',
+            studentAction: 'Đại diện nhóm báo cáo kết quả; các nhóm khác nhận xét, phản biện.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Chốt kiến thức trọng tâm, chuẩn hóa nội dung cần ghi nhớ vào vở.',
+            studentAction: 'Ghi chép kiến thức cốt lõi vào vở.'
+          }
+        ]
+      },
+      {
+        id: `act-ppct-3`,
+        code: 'hd3',
+        title: 'Hoạt động 3: Luyện tập (Củng cố kỹ năng & Trắc nghiệm tương tác)',
+        durationMinutes: 12,
+        objective: 'Rèn luyện phản xạ tính toán và áp dụng linh hoạt công thức vừa học.',
+        content: 'Giải các bài tập cơ bản và câu hỏi trắc nghiệm tương tác trên nền tảng số.',
+        product: 'Đáp án chính xác các bài tập luyện tập trong vở và điểm số trắc nghiệm.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Giao bài tập luyện tập 1, 2 và mở mini-quiz củng cố nhanh trên Quizizz/Kahoot.',
+            studentAction: 'Tiếp nhận bài tập và chuẩn bị dụng cụ tính toán.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Quan sát tiến độ làm bài của học sinh cả lớp.',
+            studentAction: 'Thực hiện giải bài tập độc lập, sau đó so sánh kết quả theo cặp.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Gọi học sinh lên giải chi tiết hoặc chiếu bảng xếp hạng câu trả lời đúng.',
+            studentAction: 'Học sinh trình bày các bước giải và giải thích kết quả.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Nhận xét, chỉ ra các lỗi sai học sinh thường mắc phải và tuyên dương tinh thần học tập.',
+            studentAction: 'Ghi chú mẹo giải nhanh và sửa chữa lỗi sai vào vở.'
+          }
+        ]
+      },
+      {
+        id: `act-ppct-4`,
+        code: 'hd4',
+        title: 'Hoạt động 4: Vận dụng (Nhiệm vụ thực tế & Hướng dẫn tự học)',
+        durationMinutes: 6,
+        objective: 'Vận dụng kiến thức bài học giải quyết bài toán gắn liền với đời sống.',
+        content: 'Bài toán thực tiễn hoặc nhiệm vụ dự án nhỏ ngoài giờ lên lớp.',
+        product: 'Báo cáo sản phẩm vận dụng nộp vào tiết học tiếp theo.',
+        steps: [
+          {
+            name: 'Bước 1: Chuyển giao nhiệm vụ',
+            teacherAction: 'Giao bài tập vận dụng thực tế và hướng dẫn nguồn tài liệu tham khảo.',
+            studentAction: 'Lắng nghe và ghi chép yêu cầu bài tập vận dụng.'
+          },
+          {
+            name: 'Bước 2: Thực hiện nhiệm vụ',
+            teacherAction: 'Gợi ý các hướng tiếp cận sáng tạo và việc sử dụng công cụ số hỗ trợ.',
+            studentAction: 'Phác thảo nhanh ý tưởng giải quyết.'
+          },
+          {
+            name: 'Bước 3: Báo cáo, thảo luận',
+            teacherAction: 'Quy định hình thức nộp báo cáo (giấy hoặc slide số).',
+            studentAction: 'Thống nhất cách thức làm việc nhóm ở nhà.'
+          },
+          {
+            name: 'Bước 4: Kết luận, nhận định',
+            teacherAction: 'Dặn dò chuẩn bị bài cho tiết học tiếp theo.',
+            studentAction: 'Ghi nhớ dặn dò của giáo viên.'
+          }
+        ]
+      }
+    ];
+
+    worksheets = [
+      {
+        title: `PHIẾU HỌC TẬP: ${entry.lessonName.toUpperCase()}`,
+        content: `Họ và tên: ........................................... Lớp: ${className || effectiveClass}\n1. Nhắc lại kiến thức cần nhớ:\n   ................................................................................\n2. Thực hiện nhiệm vụ khám phá:\n   ................................................................................\n3. Kết luận rút ra:\n   ................................................................................`
+      }
+    ];
+
+    rubrics = [
+      {
+        criterion: 'Mức độ hiểu và áp dụng kiến thức',
+        level1: 'Chưa nắm vững quy tắc, còn nhầm lẫn (0 - 0.25đ)',
+        level2: 'Áp dụng được công thức cơ bản nhưng tính toán còn chậm (0.5đ)',
+        level3: 'Nắm vững lý thuyết, tính toán chính xác, tự tin giải thích (1.0đ)'
+      }
+    ];
+  }
+
+  const khbdObj: KHBDData = {
+    schoolName: 'TRƯỜNG THCS MỸ HÓA - BẾN TRE',
+    department: 'TỔ TOÁN - TIN HỌC',
+    teacherName: effectiveTeacher,
+    lessonName: entry.lessonName,
+    subject: entry.subject || (saved.subject as any) || 'Toán học',
+    educationLevel: 'THCS',
+    grade: entry.grade || 'Lớp 9',
+    className: effectiveClass,
+    assignedClasses: assigned,
+    schoolYear: effectiveYear,
+    periodsCount: entry.periodsCount,
+    currentPeriod: lessonPeriodNumber,
+    timeframe: `Năm học ${effectiveYear} (Học kỳ ${entry.semester} - Tuần ${entry.week} - Phân phối ${entry.branch === 'Hình học' ? 'Hình' : entry.branch === 'Đại số' ? 'Số' : entry.branch === 'Thống kê & Xác suất' ? 'Thống kê' : entry.branch}: Tiết ${entry.periodNumber})`,
+    curriculumRef: {
+      week: entry.week,
+      period: entry.periodNumber,
+      overallPeriod: entry.overallPeriodNumber || entry.periodNumber,
+      lessonPeriod: lessonPeriodNumber,
+      branch: entry.branch,
+      chapter: entry.chapter,
+      digitalCompetency: entry.digitalCompetency,
+      aiRoleCode: entry.aiRoleCode
+    },
+    objectives,
+    equipment: {
+      teacher: [
+        entry.equipment,
+        'Kế hoạch bài dạy chuẩn CV 5512, slide trình chiếu bài giảng 16:9, hệ thống phiếu học tập số 1 và số 2.'
+      ],
+      students: [
+        `Sách giáo khoa Toán ${shortGrade}, vở ghi bài, thước kẻ, compa, MTCT (Casio fx-580VN X / fx-880BTG).`,
+        'Thiết bị thông minh / máy tính bảng (nếu tiết học diễn ra tại phòng Tin học).'
+      ],
+      digitalResources: [
+        entry.digitalCompetency || 'Phần mềm GeoGebra / Desmos mô phỏng trực quan.',
+        entry.aiRoleCode ? `Ứng dụng AI giáo dục theo QĐ 2422: ${entry.aiRoleCode}` : 'Trang trắc nghiệm trực tuyến Quizizz/Kahoot củng cố kiến thức.'
+      ]
+    },
+    activities,
+    appendix: {
+      worksheets,
+      rubrics
+    }
+  };
+
+  return {
+    version: '2026-2027.PPCT',
+    lastUpdated: new Date().toISOString(),
+    activeTab: 'khbd',
+    khbd: khbdObj,
+    slides: generateStaticSlides(khbdObj, 20),
+    exam: {
+      examTitle: `ĐỀ KIỂM TRA ĐỊNH KỲ MÔN ${entry.subject || 'TOÁN'} ${shortGrade} - ${effectiveClass.toUpperCase()}`,
+      subject: entry.subject || 'Toán học',
+      grade: entry.grade || 'Lớp 9',
+      durationMinutes: 45,
+      schoolYear: effectiveYear,
+      examCode: `THCS-MYHOA-T${shortGrade}-${entry.periodNumber}`,
+      matrix: {
+        targetTotalScore: 10.0,
+        recognitionRatio: 40,
+        comprehensionRatio: 30,
+        applicationRatio: 30
+      },
+      part1: {
+        title: 'PHẦN I. CÂU HỎI TRẮC NGHIỆM NHIỀU PHƯƠNG ÁN LỰA CHỌN',
+        instructions: 'Thí sinh trả lời từ Câu 1 đến Câu 12. Mỗi câu hỏi chỉ chọn một phương án đúng nhất (0,25 điểm/câu).',
+        totalScore: 3.0,
+        questions: [
+          {
+            id: 't9-p1-1',
+            code: 'Câu 1',
+            text: `Cho biểu thức liên quan đến kiến thức ${entry.lessonName.split('(')[0]}. Điều kiện xác định là:`,
+            level: 'NB',
+            score: 0.25,
+            options: [
+              { key: 'A', text: 'x ≥ 0' },
+              { key: 'B', text: 'x > 0' },
+              { key: 'C', text: 'x ≠ 0' },
+              { key: 'D', text: 'x tùy ý' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'Điều kiện xác định cơ bản theo định nghĩa SGK Toán 9.'
+          },
+          {
+            id: 't9-p1-2',
+            code: 'Câu 2',
+            text: 'Cặp số nào sau đây là một nghiệm của phương trình 2x - y = 3?',
+            level: 'NB',
+            score: 0.25,
+            options: [
+              { key: 'A', text: '(2; 1)' },
+              { key: 'B', text: '(1; 2)' },
+              { key: 'C', text: '(0; 3)' },
+              { key: 'D', text: '(3; 0)' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'Thay x = 2, y = 1 vào phương trình ta được 2(2) - 1 = 3 (thỏa mãn).'
+          },
+          {
+            id: 't9-p1-3',
+            code: 'Câu 3',
+            text: 'Trong tam giác vuông có một góc nhọn α, tỉ số giữa cạnh đối và cạnh huyền được gọi là:',
+            level: 'NB',
+            score: 0.25,
+            options: [
+              { key: 'A', text: 'sin α' },
+              { key: 'B', text: 'cos α' },
+              { key: 'C', text: 'tan α' },
+              { key: 'D', text: 'cot α' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'Định nghĩa: sin = đối / huyền.'
+          },
+          {
+            id: 't9-p1-4',
+            code: 'Câu 4',
+            text: 'Tâm của đường tròn ngoại tiếp tam giác vuông là điểm nào sau đây?',
+            level: 'NB',
+            score: 0.25,
+            options: [
+              { key: 'A', text: 'Trung điểm cạnh huyền' },
+              { key: 'B', text: 'Đỉnh góc vuông' },
+              { key: 'C', text: 'Giao điểm ba đường phân giác' },
+              { key: 'D', text: 'Trọng tâm tam giác' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'Tâm đường tròn ngoại tiếp tam giác vuông là trung điểm của cạnh huyền.'
+          },
+          {
+            id: 't9-p1-5',
+            code: 'Câu 5',
+            text: 'Nghiệm của hệ phương trình { x + y = 5; x - y = 1 } là:',
+            level: 'TH',
+            score: 0.25,
+            options: [
+              { key: 'A', text: '(3; 2)' },
+              { key: 'B', text: '(2; 3)' },
+              { key: 'C', text: '(4; 1)' },
+              { key: 'D', text: '(1; 4)' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'Cộng hai phương trình: 2x = 6 ⇒ x = 3 ⇒ y = 2.'
+          },
+          {
+            id: 't9-p1-6',
+            code: 'Câu 6',
+            text: 'Tính giá trị của căn bậc hai √49:',
+            level: 'NB',
+            score: 0.25,
+            options: [
+              { key: 'A', text: '7' },
+              { key: 'B', text: '-7' },
+              { key: 'C', text: '±7' },
+              { key: 'D', text: '49' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'Căn bậc hai số học của 49 là 7.'
+          },
+          {
+            id: 't9-p1-7',
+            code: 'Câu 7',
+            text: 'Đồ thị hàm số y = 2x² đi qua điểm nào dưới đây?',
+            level: 'TH',
+            score: 0.25,
+            options: [
+              { key: 'A', text: '(1; 2)' },
+              { key: 'B', text: '(1; 4)' },
+              { key: 'C', text: '(2; 4)' },
+              { key: 'D', text: '(-1; -2)' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'Với x = 1 thì y = 2(1)² = 2.'
+          },
+          {
+            id: 't9-p1-8',
+            code: 'Câu 8',
+            text: 'Cho tam giác ABC vuông tại A có AB = 3 cm, AC = 4 cm. Độ dài đường cao AH bằng:',
+            level: 'TH',
+            score: 0.25,
+            options: [
+              { key: 'A', text: '2.4 cm' },
+              { key: 'B', text: '2.5 cm' },
+              { key: 'C', text: '5 cm' },
+              { key: 'D', text: '1.2 cm' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'BC = 5 cm. AH = (AB · AC) / BC = (3 · 4) / 5 = 2.4 cm.'
+          },
+          {
+            id: 't9-p1-9',
+            code: 'Câu 9',
+            text: 'Biệt thức Δ của phương trình bậc hai x² - 4x + 3 = 0 bằng bao nhiêu?',
+            level: 'TH',
+            score: 0.25,
+            options: [
+              { key: 'A', text: '4' },
+              { key: 'B', text: '16' },
+              { key: 'C', text: '-4' },
+              { key: 'D', text: '0' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'Δ = b² - 4ac = (-4)² - 4(1)(3) = 16 - 12 = 4.'
+          },
+          {
+            id: 't9-p1-10',
+            code: 'Câu 10',
+            text: 'Tổng hai nghiệm của phương trình x² - 7x + 10 = 0 theo Định lý Viète là:',
+            level: 'TH',
+            score: 0.25,
+            options: [
+              { key: 'A', text: '7' },
+              { key: 'B', text: '-7' },
+              { key: 'C', text: '10' },
+              { key: 'D', text: '-10' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'x₁ + x₂ = -b/a = 7.'
+          },
+          {
+            id: 't9-p1-11',
+            code: 'Câu 11',
+            text: 'Một hình nón có bán kính đáy r = 3 cm và chiều cao h = 4 cm. Độ dài đường sinh l bằng:',
+            level: 'TH',
+            score: 0.25,
+            options: [
+              { key: 'A', text: '5 cm' },
+              { key: 'B', text: '7 cm' },
+              { key: 'C', text: '1 cm' },
+              { key: 'D', text: '25 cm' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'l = √(r² + h²) = √(3² + 4²) = 5 cm.'
+          },
+          {
+            id: 't9-p1-12',
+            code: 'Câu 12',
+            text: 'Một cột đèn cao 6 m có bóng trên mặt đất dài 3.5 m. Góc tạo bởi tia nắng mặt trời và mặt đất (làm tròn đến độ) là:',
+            level: 'VD',
+            score: 0.25,
+            options: [
+              { key: 'A', text: '60°' },
+              { key: 'B', text: '30°' },
+              { key: 'C', text: '45°' },
+              { key: 'D', text: '75°' }
+            ],
+            correctAnswer: 'A',
+            explanation: 'tan α = 6 / 3.5 ≈ 1.714 ⇒ α ≈ 60°.'
+          }
+        ]
+      },
+      part2: {
+        title: 'PHẦN II. CÂU HỎI TRẮC NGHIỆM ĐÚNG / SAI',
+        instructions: 'Thí sinh trả lời từ Câu 1 đến Câu 4 (Mỗi câu tối đa 1,0 điểm theo barem CV 7991: đúng 1 ý 0.1đ, đúng 2 ý 0.25đ, đúng 3 ý 0.5đ, đúng 4 ý 1.0đ).',
+        totalScore: 4.0,
+        questions: [
+          {
+            id: 't9-p2-1',
+            code: 'Câu 1',
+            stem: `Xét hệ hai phương trình bậc nhất hai ẩn { 2x + y = 4; x - y = -1 }.`,
+            scoreMax: 1.0,
+            statements: [
+              {
+                subId: 'a',
+                text: 'Cặp số (1; 2) là nghiệm của hệ phương trình đã cho.',
+                isCorrect: true,
+                level: 'NB',
+                explanation: 'Thay x = 1, y = 2: 2(1) + 2 = 4 (đúng); 1 - 2 = -1 (đúng).'
+              },
+              {
+                subId: 'b',
+                text: 'Hệ phương trình có vô số nghiệm.',
+                isCorrect: false,
+                level: 'NB',
+                explanation: 'Sai vì a/a\' = 2/1 ≠ b/b\' = 1/(-1) nên hệ có nghiệm duy nhất.'
+              },
+              {
+                subId: 'c',
+                text: 'Trên mặt phẳng tọa độ Oxy, hai đường thẳng biểu diễn hai phương trình cắt nhau tại điểm M(1; 2).',
+                isCorrect: true,
+                level: 'TH',
+                explanation: 'Đúng, giao điểm của hai đường thẳng chính là nghiệm duy nhất của hệ.'
+              },
+              {
+                subId: 'd',
+                text: 'Biểu thức 3x + 2y có giá trị bằng 7.',
+                isCorrect: true,
+                level: 'TH',
+                explanation: 'Đúng vì 3(1) + 2(2) = 7.'
+              }
+            ]
+          },
+          {
+            id: 't9-p2-2',
+            code: 'Câu 2',
+            stem: 'Cho tam giác ABC vuông tại A có đường cao AH. Biết BH = 4 cm, CH = 9 cm.',
+            scoreMax: 1.0,
+            statements: [
+              {
+                subId: 'a',
+                text: 'Độ dài cạnh huyền BC bằng 13 cm.',
+                isCorrect: true,
+                level: 'NB',
+                explanation: 'BC = BH + CH = 4 + 9 = 13 cm.'
+              },
+              {
+                subId: 'b',
+                text: 'Độ dài đường cao AH bằng 6 cm.',
+                isCorrect: true,
+                level: 'TH',
+                explanation: 'AH² = BH · CH = 4 · 9 = 36 ⇒ AH = 6 cm.'
+              },
+              {
+                subId: 'c',
+                text: 'Độ dài cạnh góc vuông AB bằng √52 cm.',
+                isCorrect: true,
+                level: 'TH',
+                explanation: 'AB² = BH · BC = 4 · 13 = 52 ⇒ AB = √52 cm.'
+              },
+              {
+                subId: 'd',
+                text: 'Diện tích tam giác ABC bằng 78 cm².',
+                isCorrect: false,
+                level: 'VD',
+                explanation: 'Sai vì S = 1/2 · BC · AH = 1/2 · 13 · 6 = 39 cm².'
+              }
+            ]
+          },
+          {
+            id: 't9-p2-3',
+            code: 'Câu 3',
+            stem: 'Cho phương trình bậc hai x² - 6x + m = 0 với m là tham số.',
+            scoreMax: 1.0,
+            statements: [
+              {
+                subId: 'a',
+                text: 'Khi m = 8, phương trình có hai nghiệm phân biệt là x = 2 và x = 4.',
+                isCorrect: true,
+                level: 'NB',
+                explanation: 'Đúng vì (x - 2)(x - 4) = x² - 6x + 8 = 0.'
+              },
+              {
+                subId: 'b',
+                text: 'Phương trình có nghiệm kép khi và chỉ khi m = 9.',
+                isCorrect: true,
+                level: 'TH',
+                explanation: 'Δ\' = (-3)² - m = 9 - m = 0 ⇔ m = 9.'
+              },
+              {
+                subId: 'c',
+                text: 'Phương trình vô nghiệm khi m > 9.',
+                isCorrect: true,
+                level: 'TH',
+                explanation: 'Khi m > 9 thì Δ\' = 9 - m < 0 nên phương trình vô nghiệm.'
+              },
+              {
+                subId: 'd',
+                text: 'Để phương trình có hai nghiệm cùng dấu thì 0 < m ≤ 9.',
+                isCorrect: true,
+                level: 'VD',
+                explanation: 'Để có 2 nghiệm cùng dấu: Δ\' ≥ 0 (m ≤ 9) và P = m > 0 ⇒ 0 < m ≤ 9.'
+              }
+            ]
+          },
+          {
+            id: 't9-p2-4',
+            code: 'Câu 4',
+            stem: 'Một thùng phuy hình trụ có bán kính đáy r = 0.3 m và chiều cao h = 1 m.',
+            scoreMax: 1.0,
+            statements: [
+              {
+                subId: 'a',
+                text: 'Diện tích xung quanh của thùng phuy là S_xq = 2πrh = 0.6π m².',
+                isCorrect: true,
+                level: 'NB',
+                explanation: 'Đúng vì S_xq = 2 · π · 0.3 · 1 = 0.6π m².'
+              },
+              {
+                subId: 'b',
+                text: 'Thể tích của thùng phuy là V = πr²h = 0.09π m³.',
+                isCorrect: true,
+                level: 'TH',
+                explanation: 'Đúng vì V = π · (0.3)² · 1 = 0.09π m³.'
+              },
+              {
+                subId: 'c',
+                text: 'Thùng phuy này có thể chứa được tối đa hơn 300 lít nước (lấy π ≈ 3.14).',
+                isCorrect: false,
+                level: 'VD',
+                explanation: 'Sai vì V = 0.09 · 3.14 ≈ 0.2826 m³ = 282.6 lít (< 300 lít).'
+              },
+              {
+                subId: 'd',
+                text: 'Nếu tăng bán kính đáy lên gấp đôi và giữ nguyên chiều cao thì thể tích thùng tăng gấp 4 lần.',
+                isCorrect: true,
+                level: 'TH',
+                explanation: 'Đúng vì V tỉ lệ với r², r tăng gấp đôi thì V tăng gấp 4 lần.'
+              }
+            ]
+          }
+        ]
+      },
+      part3: {
+        title: 'PHẦN III. CÂU HỎI TRẮC NGHIỆM TRẢ LỜI NGẮN',
+        instructions: 'Thí sinh trả lời từ Câu 1 đến Câu 4 (Mỗi câu trả lời đúng được 0,5 điểm).',
+        totalScore: 2.0,
+        questions: [
+          {
+            id: 't9-p3-1',
+            code: 'Câu 1',
+            text: 'Tìm giá trị x để biểu thức √(2x - 6) có nghĩa. Kết quả là x ≥ ?',
+            level: 'NB',
+            score: 0.5,
+            correctAnswer: '3',
+            explanation: '2x - 6 ≥ 0 ⇔ 2x ≥ 6 ⇔ x ≥ 3.'
+          },
+          {
+            id: 't9-p3-2',
+            code: 'Câu 2',
+            text: 'Một tam giác vuông có hai cạnh góc vuông là 6 cm và 8 cm. Tính bán kính đường tròn ngoại tiếp tam giác đó (theo đơn vị cm).',
+            level: 'TH',
+            score: 0.5,
+            unit: 'cm',
+            correctAnswer: '5',
+            explanation: 'Cạnh huyền = √(6² + 8²) = 10 cm. Bán kính R = 10 / 2 = 5 cm.'
+          },
+          {
+            id: 't9-p3-3',
+            code: 'Câu 3',
+            text: 'Một công nhân dự định may 120 cái áo trong một thời gian nhất định. Nhờ cải tiến kỹ thuật, mỗi ngày người đó may thêm được 3 cái áo nên đã hoàn thành trước kế hoạch 2 ngày. Hỏi theo kế hoạch, mỗi ngày công nhân đó phải may bao nhiêu cái áo?',
+            level: 'VD',
+            score: 0.5,
+            unit: 'áo/ngày',
+            correctAnswer: '12',
+            explanation: 'Gọi năng suất kế hoạch là x (áo/ngày). Thời gian kế hoạch: 120/x. Thời gian thực tế: 120/(x+3). Phương trình: 120/x - 120/(x+3) = 2 ⇔ x = 12 (thỏa mãn).'
+          },
+          {
+            id: 't9-p3-4',
+            code: 'Câu 4',
+            text: 'Tìm giá trị của m để phương trình x² - 2(m + 1)x + m² + 3 = 0 có nghiệm kép.',
+            level: 'TH',
+            score: 0.5,
+            correctAnswer: '1',
+            explanation: 'Δ\' = (m + 1)² - (m² + 3) = 2m - 2 = 0 ⇔ m = 1.'
+          }
+        ]
+      },
+      part4: {
+        title: 'PHẦN IV. CÂU HỎI TỰ LUẬN',
+        instructions: 'Thí sinh trình bày chi tiết các bước giải bài toán vào tờ giấy thi (1,0 điểm).',
+        totalScore: 1.0,
+        questions: [
+          {
+            id: 't9-p4-1',
+            code: 'Câu 1 (Tự luận)',
+            text: `Một chiếc máy bay cất cánh theo phương tạo với mặt đất một góc 25°. Sau 2 phút cất cánh với vận tốc trung bình 450 km/h, máy bay đạt được độ cao bao nhiêu mét so với mặt đất? (Làm tròn kết quả đến hàng đơn vị của mét).`,
+            level: 'VD',
+            score: 1.0,
+            rubricSteps: [
+              {
+                stepDescription: 'Đổi thời gian: 2 phút = 2/60 giờ = 1/30 giờ. Tính quãng đường máy bay bay được theo đường xiên: s = v · t = 450 · (1/30) = 15 km = 15.000 m.',
+                score: 0.25
+              },
+              {
+                stepDescription: 'Mô hình hóa hình học: Gọi A là vị trí cất cánh, B là vị trí máy bay sau 2 phút, H là hình chiếu của B trên mặt đất. Tam giác ABH vuông tại H có AB = 15.000 m và góc BAH = 25°.',
+                score: 0.25
+              },
+              {
+                stepDescription: 'Áp dụng hệ thức lượng trong tam giác vuông ABH: Độ cao của máy bay là BH = AB · sin(BAH) = 15.000 · sin(25°).',
+                score: 0.25
+              },
+              {
+                stepDescription: 'Tính toán: BH ≈ 15.000 · 0.4226 ≈ 6.339 m. Kết luận: Máy bay đạt độ cao khoảng 6.339 mét so với mặt đất.',
+                score: 0.25
+              }
+            ]
+          }
+        ]
+      }
+    },
+    verificationPassed: {
+      has3Subsystems: true,
+      part2TrueFalse4Items: true,
+      hasExportTools: true,
+      hasJsonStateHandoff: true
+    }
+  };
+}
