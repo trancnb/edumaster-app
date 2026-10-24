@@ -1,0 +1,6 @@
+{
+  "name": "EduMaster 5512 & 7991 - Không Gian Sư Phạm Số",
+  "description": "Nền tảng số hóa Kế hoạch bài dạy chuẩn Công văn 5512, Trình chiếu bài giảng và Đề kiểm tra chuẩn Công văn 7991/BGDĐT-GDTrH.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
